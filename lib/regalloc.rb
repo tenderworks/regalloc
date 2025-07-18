@@ -1,6 +1,4 @@
-require "tsort"
 require "set"
-require "pp"
 
 module Regalloc
   module DSL
@@ -40,13 +38,10 @@ module Regalloc
 
     def blt iftrue:, iffalse:
       self << Insn.new(:blt, nil, [iftrue, iffalse])
-      add_successor(iftrue.block)
-      add_successor(iffalse.block)
     end
 
     def jump edge
       self << Insn.new(:jump, nil, [edge])
-      add_successor(edge.block)
     end
 
     def define(*block_params, &blk)
@@ -104,13 +99,11 @@ module Regalloc
     attr_reader :instructions
     attr_reader :parameters
     attr_reader :func
-    attr_accessor :successors
 
     def initialize func, idx, insns, parameters
       @func = func
       @instructions = insns
       @parameters = parameters
-      @successors = []
       @idx = idx
     end
 
@@ -119,19 +112,19 @@ module Regalloc
     end
 
     def succ1
-      @successors[0]
+      successors[0]
     end
 
     def succ2
-      @successors[1]
+      successors[1]
     end
 
     def << insn
       @instructions << insn
     end
 
-    def add_successor block
-      @successors << block
+    def successors
+      @instructions.last.dests.map(&:block)
     end
 
     def po_traversal visited, post_order
@@ -139,7 +132,7 @@ module Regalloc
 
       visited.add(self)
 
-      @successors.each do |successor|
+      successors.each do |successor|
         successor.po_traversal(visited, post_order)
       end
 
@@ -189,6 +182,10 @@ module Regalloc
           pp.text @ins.map(&:inspect).join(", ")
         end
       end
+    end
+
+    def dests
+      ins.grep(Edge)
     end
   end
 
@@ -268,39 +265,3 @@ module Regalloc
     end
   end
 end
-
-FUNC = Regalloc::Function.new
-
-R10 = FUNC.next_vreg
-R11 = FUNC.next_vreg
-R12 = FUNC.next_vreg
-R13 = FUNC.next_vreg
-
-B1 = FUNC.new_block
-B2 = FUNC.new_block
-B3 = FUNC.new_block
-B4 = FUNC.new_block
-
-B1.define(R10, R11) do
-  jump(edge(B2, [imm(1), R11]))
-end
-
-B2.define(R12, R13) do
-  cmp(R13, imm(1))
-  blt(iftrue: edge(B4), iffalse: edge(B3))
-end
-
-B3.define do
-  r14 = mul(R12, R13)
-  r15 = sub(R13, imm(1))
-  jump(edge(B2, [r14, r15]))
-end
-
-B4.define do
-  out = add(R10, R12)
-  ret out
-end
-
-FUNC.entry_block = B1
-
-pp FUNC
