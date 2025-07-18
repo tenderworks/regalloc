@@ -59,7 +59,11 @@ module Regalloc
     end
 
     def rpo
-      entry_block.po_traversal(Set.new, []).reverse
+      po.reverse
+    end
+
+    def po
+      entry_block.po_traversal(Set.new, [])
     end
 
     def next_vreg
@@ -90,6 +94,35 @@ module Regalloc
           pp.breakable
         end
       end
+    end
+
+    def analyze_liveness
+      # Map from Block to bitset of VRegs live at entry
+      order = po
+      live_in = Hash.new 0
+      changed = true
+      while changed
+        changed = false
+        for block in order
+          block_live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
+          for insn in block.instructions.reverse
+            out = insn.out&.as_vreg
+            if out
+              block_live &= ~(1 << out.num)
+            end
+            ins = insn.vreg_ins
+            block_live |= ins.map { |vreg| 1 << vreg.num }.reduce(0, :|)
+          end
+          for param in block.parameters
+            block_live &= ~(1 << param.num)
+          end
+          if live_in[block] != block_live
+            changed = true
+            live_in[block] = block_live
+          end
+        end
+      end
+      live_in
     end
   end
 
@@ -187,12 +220,26 @@ module Regalloc
     def dests
       ins.grep(Edge)
     end
+
+    def vreg_ins
+      result = []
+      ins.each do |op|
+        if op.is_a?(VReg)
+          result << op
+        elsif op.is_a?(Edge)
+          result.concat(op.params.grep(VReg))
+        end
+      end
+      result
+    end
   end
 
   class Operand
     def pretty_print(pp)
       pp.text inspect
     end
+
+    def as_vreg = nil
   end
 
   class Immediate < Operand
@@ -216,6 +263,8 @@ module Regalloc
     def inspect
       "V#{@num}"
     end
+
+    def as_vreg = self
   end
 
   class PReg      < Operand

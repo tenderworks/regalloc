@@ -35,4 +35,20 @@ end
 
 FUNC.entry_block = B1
 
+def bitset_to_names(bitset)
+  result = []
+  idx = 0
+  while bitset != 0
+    if bitset & 1 == 1
+      result << "V#{idx}"
+    end
+    idx += 1
+    bitset >>= 1
+  end
+  result
+end
+
 pp FUNC
+FUNC.analyze_liveness.each do |block, live_in|
+  puts "Block #{block.name} live in: #{bitset_to_names(live_in).join(', ')}"
+end
