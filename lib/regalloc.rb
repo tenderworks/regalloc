@@ -106,13 +106,16 @@ module Regalloc
         for block in order
           block_live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
           for insn in block.instructions.reverse
+            # Defined vregs are not live-in
             out = insn.out&.as_vreg
             if out
               block_live &= ~(1 << out.num)
             end
-            ins = insn.vreg_ins
-            block_live |= ins.map { |vreg| 1 << vreg.num }.reduce(0, :|)
+            # Used vregs are live-in
+            block_live |= insn.vreg_ins.map { |vreg| 1 << vreg.num }.reduce(0, :|)
           end
+          # Except for block parameters, which are implicitly defined at the
+          # start of the block
           for param in block.parameters
             block_live &= ~(1 << param.num)
           end
