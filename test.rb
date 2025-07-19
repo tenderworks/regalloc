@@ -1,5 +1,6 @@
 require "pp"
 require "regalloc"
+require "test/unit"
 
 FUNC = Regalloc::Function.new
 
@@ -49,6 +50,13 @@ def bitset_to_names(bitset)
 end
 
 pp FUNC
-FUNC.analyze_liveness.each do |block, live_in|
-  puts "Block #{block.name} live in: #{bitset_to_names(live_in).join(', ')}"
+
+class LivenessTests < Test::Unit::TestCase
+  def test_live_in
+    live_in = FUNC.analyze_liveness
+    assert_equal bitset_to_names(live_in[B1]), []
+    assert_equal bitset_to_names(live_in[B2]), ["V0"]
+    assert_equal bitset_to_names(live_in[B3]), ["V0", "V2", "V3"]
+    assert_equal bitset_to_names(live_in[B4]), ["V0", "V2"]
+  end
 end
