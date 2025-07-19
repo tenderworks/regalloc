@@ -55,8 +55,8 @@ class LivenessTests < Test::Unit::TestCase
   def test_live_in
     live_in = FUNC.analyze_liveness
     assert_equal bitset_to_names(live_in[B1]), []
-    assert_equal bitset_to_names(live_in[B2]), ["V0"]
-    assert_equal bitset_to_names(live_in[B3]), ["V0", "V2", "V3"]
-    assert_equal bitset_to_names(live_in[B4]), ["V0", "V2"]
+    assert_equal bitset_to_names(live_in[B2]), [R10.inspect]
+    assert_equal bitset_to_names(live_in[B3]), [R10.inspect, R12.inspect, R13.inspect]
+    assert_equal bitset_to_names(live_in[B4]), [R10.inspect, R12.inspect]
   end
 end
