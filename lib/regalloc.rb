@@ -56,6 +56,7 @@ module Regalloc
     def initialize
       @next_vreg_name = 0
       @next_blk_name = 1
+      @vregs = {}
     end
 
     def rpo
@@ -68,8 +69,13 @@ module Regalloc
 
     def next_vreg
       vreg = VReg.new @next_vreg_name
+      @vregs[@next_vreg_name] = vreg
       @next_vreg_name += 1
       vreg
+    end
+
+    def vreg idx
+      @vregs[idx]
     end
 
     def new_block

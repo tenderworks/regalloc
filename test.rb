@@ -39,7 +39,7 @@ FUNC.entry_block = B1
 def bitset_to_names(bitset)
   result = []
   each_bit(bitset) do |idx|
-    result << "V#{idx}"
+    result << FUNC.vreg(idx)
   end
   result
 end
@@ -50,8 +50,8 @@ class LivenessTests < Test::Unit::TestCase
   def test_live_in
     live_in = FUNC.analyze_liveness
     assert_equal bitset_to_names(live_in[B1]), []
-    assert_equal bitset_to_names(live_in[B2]), [R10.inspect]
-    assert_equal bitset_to_names(live_in[B3]), [R10.inspect, R12.inspect, R13.inspect]
-    assert_equal bitset_to_names(live_in[B4]), [R10.inspect, R12.inspect]
+    assert_equal bitset_to_names(live_in[B2]), [R10]
+    assert_equal bitset_to_names(live_in[B3]), [R10, R12, R13]
+    assert_equal bitset_to_names(live_in[B4]), [R10, R12]
   end
 end
