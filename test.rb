@@ -38,13 +38,8 @@ FUNC.entry_block = B1
 
 def bitset_to_names(bitset)
   result = []
-  idx = 0
-  while bitset != 0
-    if bitset & 1 == 1
-      result << "V#{idx}"
-    end
-    idx += 1
-    bitset >>= 1
+  each_bit(bitset) do |idx|
+    result << "V#{idx}"
   end
   result
 end
