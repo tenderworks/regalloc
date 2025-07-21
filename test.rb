@@ -44,6 +44,27 @@ class LivenessTests < Minitest::Test
   end
 
   def test_build_intervals
+    # 2: v1 <- x(...)
+    # 4: v2 <- x(...)
+
+
+    # for each block b in order do
+    #   live = live_in[b]
+    #
+    #   for each phi function phi of successors of b do
+    #     live.add(phi.inputOf(b))
+    #
+    #   for each opd in live do
+    #     intervals[opd].addRange(b.from, b.to)
+    #
+    #   for each operation op of b in reverse order do
+    #     for each output operand opd of op do
+    #       intervals[opd].setFrom(op.id)
+    #
+    #     for each input operand opd of op do
+    #       intervals[opd].addRange(b.from, op.id)
+    #
+    func.build_intervals
   end
 
   def build_func

@@ -80,6 +80,10 @@ module Regalloc
       end
     end
 
+    def build_intervals
+      number_instructions! if @instructions.empty?
+    end
+
     def rpo
       po.reverse
     end
