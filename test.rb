@@ -64,7 +64,12 @@ class LivenessTests < Minitest::Test
     live_in = func.analyze_liveness
     func.number_instructions!
     intervals = func.build_intervals live_in
-    pp intervals
+    assert_equal [16..36], intervals[@r10].ranges
+    assert_equal [16..20], intervals[@r11].ranges
+    assert_equal [20..28, 34..36], intervals[@r12].ranges
+    assert_equal [20..30], intervals[@r13].ranges
+    assert_equal [28..34], intervals[@r14].ranges
+    assert_equal [30..34], intervals[@r15].ranges
   end
 
   def build_func
@@ -74,6 +79,8 @@ class LivenessTests < Minitest::Test
     r11 = @r11 = func.next_vreg
     r12 = @r12 = func.next_vreg
     r13 = @r13 = func.next_vreg
+    r14 = nil
+    r15 = nil
 
     b1 = @b1 = func.new_block
     b2 = @b2 = func.new_block
@@ -94,6 +101,9 @@ class LivenessTests < Minitest::Test
       r15 = sub(r13, imm(1))
       jump(edge(b2, [r14, r15]))
     end
+
+    @r14 = r14
+    @r15 = r15
 
     b4.define do
       out = add(r10, r12)

@@ -80,14 +80,14 @@ module Regalloc
     attr_reader :instructions
 
     def initialize
-      @next_vreg_name = 0
+      @next_vreg_name = 10
       @next_blk_name = 1
       @vregs = {}
       @instructions = []
     end
 
     def number_instructions!
-      number = 0
+      number = 16
       rpo.each do |blk|
         blk.from = number
         number += 2
