@@ -153,14 +153,6 @@ module Regalloc
       "B#{@idx}"
     end
 
-    def succ1
-      successors[0]
-    end
-
-    def succ2
-      successors[1]
-    end
-
     def << insn
       @instructions << insn
     end
@@ -201,9 +193,6 @@ module Regalloc
   class Insn
     attr_reader :name, :out, :ins
     attr_accessor :id
-
-    def in1; @ins[0]; end
-    def in2; @ins[1]; end
 
     def initialize name, out, ins
       @name = name
