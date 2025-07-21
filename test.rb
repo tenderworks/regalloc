@@ -72,6 +72,13 @@ class LivenessTests < Minitest::Test
     assert_equal [30..34], intervals[@r15].ranges
   end
 
+  def test_linear_scan
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    func.linear_scan intervals, [:p0, :p1, :p2, :p3]
+  end
+
   def build_func
     func = Regalloc::Function.new
 
