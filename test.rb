@@ -26,7 +26,6 @@ class LivenessTests < Minitest::Test
 
   def setup
     @func = build_func
-    pp @func
   end
 
   def test_live_in
