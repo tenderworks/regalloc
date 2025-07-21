@@ -58,7 +58,16 @@ module Regalloc
     end
 
     def add_range(from, to)
-      @ranges << Range.new(from, to)
+      if to <= from
+        raise ArgumentError, "Invalid range: #{from} to #{to}"
+      end
+      if @ranges.any? && @ranges.last.end == from
+        @ranges[-1] = Range.new(@ranges[-1].begin, to)
+      elsif @ranges.any? && @ranges.last.cover?(from)
+        # Do nothing
+      else
+        @ranges << Range.new(from, to)
+      end
     end
 
     def set_from(from)
