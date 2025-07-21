@@ -299,6 +299,8 @@ module Regalloc
     def inspect
       if @offset == 0
         "[#{@base.inspect}]"
+      elsif @offset < 0
+        "[#{@base.inspect} - #{@offset.abs}]"
       else
         "[#{@base.inspect} + #{@offset}]"
       end
@@ -314,11 +316,11 @@ module Regalloc
     end
 
     def inspect
-      block_name = @block.name || "Block"
-      if @params.any?
-        "→#{block_name}(#{@params.map(&:inspect).join(", ")})"
-      else
+      block_name = @block.name
+      if @params.empty?
         "→#{block_name}"
+      else
+        "→#{block_name}(#{@params.map(&:inspect).join(", ")})"
       end
     end
   end
