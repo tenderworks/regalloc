@@ -50,13 +50,34 @@ module Regalloc
     end
   end
 
+  class Interval
+    def add_range
+    end
+  end
+
   class Function
     attr_accessor :entry_block
+    attr_reader :instructions
 
     def initialize
       @next_vreg_name = 0
       @next_blk_name = 1
       @vregs = {}
+      @instructions = []
+    end
+
+    def number_instructions!
+      number = 0
+      rpo.each do |blk|
+        blk.from = number
+        number += 2
+        blk.instructions.each do |insn|
+          @instructions[number] = insn
+          insn.number = number
+          number += 2
+        end
+        blk.to = number
+      end
     end
 
     def rpo
@@ -141,12 +162,16 @@ module Regalloc
     attr_reader :instructions
     attr_reader :parameters
     attr_reader :func
+    attr_accessor :from
+    attr_accessor :to
 
     def initialize func, idx, insns, parameters
       @func = func
       @instructions = insns
       @parameters = parameters
       @idx = idx
+      @from = nil
+      @to = nil
     end
 
     def name
@@ -192,12 +217,13 @@ module Regalloc
 
   class Insn
     attr_reader :name, :out, :ins
-    attr_accessor :id
+    attr_accessor :id, :number
 
     def initialize name, out, ins
       @name = name
       @out = out
       @ins = ins
+      @number = nil
     end
 
     def pretty_print(pp)
@@ -300,6 +326,7 @@ module Regalloc
     attr_reader :block, :params
 
     def initialize block, params
+      raise unless block
       @block = block
       @params = params
     end
