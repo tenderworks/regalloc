@@ -32,8 +32,8 @@ module Regalloc
       Immediate.new v
     end
 
-    def edge block, params = []
-      Edge.new(block, params)
+    def edge block, args = []
+      Edge.new(block, args)
     end
 
     def blt iftrue:, iffalse:
@@ -255,7 +255,7 @@ module Regalloc
         if op.is_a?(VReg)
           result << op
         elsif op.is_a?(Edge)
-          result.concat(op.params.grep(VReg))
+          result.concat(op.args.grep(VReg))
         end
       end
       result
@@ -327,20 +327,20 @@ module Regalloc
   end
 
   class Edge     < Operand
-    attr_reader :block, :params
+    attr_reader :block, :args
 
-    def initialize block, params
+    def initialize block, args
       raise unless block
       @block = block
-      @params = params
+      @args = args
     end
 
     def inspect
       block_name = @block.name
-      if @params.empty?
+      if @args.empty?
         "→#{block_name}"
       else
-        "→#{block_name}(#{@params.map(&:inspect).join(", ")})"
+        "→#{block_name}(#{@args.map(&:inspect).join(", ")})"
       end
     end
   end
