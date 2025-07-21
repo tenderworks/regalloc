@@ -1,6 +1,6 @@
 require "pp"
 require "regalloc"
-require "test/unit"
+require "minitest/autorun"
 
 FUNC = Regalloc::Function.new
 
@@ -44,9 +44,20 @@ def bitset_to_names(bitset)
   result
 end
 
+def each_bit n
+  idx = 0
+  while n > 0
+    if n & 1 == 1
+      yield idx
+    end
+    idx += 1
+    n >>= 1
+  end
+end
+
 pp FUNC
 
-class LivenessTests < Test::Unit::TestCase
+class LivenessTests < Minitest::Test
   def test_live_in
     live_in = FUNC.analyze_liveness
     assert_equal bitset_to_names(live_in[B1]), []
