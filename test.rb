@@ -44,10 +44,6 @@ class LivenessTests < Minitest::Test
   end
 
   def test_build_intervals
-    # 2: v1 <- x(...)
-    # 4: v2 <- x(...)
-
-
     # for each block b in order do
     #   live = live_in[b]
     #
@@ -64,7 +60,11 @@ class LivenessTests < Minitest::Test
     #     for each input operand opd of op do
     #       intervals[opd].addRange(b.from, op.id)
     #
-    func.build_intervals
+    pp func
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    pp intervals
   end
 
   def build_func

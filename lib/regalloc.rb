@@ -51,7 +51,18 @@ module Regalloc
   end
 
   class Interval
-    def add_range
+    attr_reader :ranges
+
+    def initialize
+      @ranges = []
+    end
+
+    def add_range(from, to)
+      @ranges << Range.new(from, to)
+    end
+
+    def set_from(from)
+      @ranges[-1] = Range.new(from, @ranges[-1].end)
     end
   end
 
@@ -80,8 +91,33 @@ module Regalloc
       end
     end
 
-    def build_intervals
-      number_instructions! if @instructions.empty?
+    def build_intervals live_in
+      intervals = Hash.new { |hash, key| hash[key] = Interval.new }
+      rpo.each do |block|
+        # live = union of successor.liveIn for each successor of b
+        live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
+        # for each phi function phi of successors of b do
+        #   live.add(phi.inputOf(b))
+        live |= block.out_vregs.map { |vreg| 1 << vreg.num }.reduce(0, :|)
+        each_bit(live) do |idx|
+          opd = vreg idx
+          intervals[opd].add_range(block.from, block.to)
+        end
+        block.instructions.reverse.each do |insn|
+          out = insn.out&.as_vreg
+          if out
+            # for each output operand opd of op do
+            #   intervals[opd].setFrom(op.id)
+            intervals[out].set_from(insn.number)
+          end
+          # for each input operand opd of op do
+          #   intervals[opd].addRange(b.from, op.id)
+          insn.vreg_ins.each do |opd|
+            intervals[opd].add_range(block.from, insn.number)
+          end
+        end
+      end
+      intervals
     end
 
     def rpo
@@ -188,6 +224,10 @@ module Regalloc
 
     def successors
       @instructions.last.dests.map(&:block)
+    end
+
+    def out_vregs
+      @instructions.last.dests.map(&:args).reduce([], :+).grep(VReg)
     end
 
     def po_traversal visited, post_order
