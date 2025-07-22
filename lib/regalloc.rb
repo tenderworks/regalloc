@@ -52,11 +52,9 @@ module Regalloc
 
   class Interval
     attr_reader :ranges
-    attr_accessor :register
 
     def initialize
       @ranges = []
-      @register = nil
     end
 
     def add_range(from, to)
@@ -75,40 +73,6 @@ module Regalloc
     def set_from(from)
       @ranges[-1] = Range.new(from, @ranges[-1].end)
     end
-
-    def from
-      if @ranges.empty?
-        raise "No ranges defined"
-      end
-      @ranges.first.begin
-    end
-
-    def ends_before? position
-      if @ranges.empty?
-        raise "No ranges defined"
-      end
-      p [self, @ranges.last, position]
-      @ranges.last.end <= position
-    end
-
-    def cover? position
-      if @ranges.empty?
-        raise "No ranges defined"
-      end
-      @ranges.any? { |r| r.cover?(position) }
-    end
-
-    def intersect_with? interval
-      if @ranges.empty? || interval.ranges.empty?
-        raise "No ranges defined"
-      end
-      # TODO(max): Don't do O(n^2) check
-      @ranges.any? do |r1|
-        interval.ranges.any? { |r2| r1.overlap?(r2) }
-      end
-    end
-
-    def next_intersection
   end
 
   class Function
@@ -163,77 +127,6 @@ module Regalloc
         end
       end
       intervals
-    end
-
-    def linear_scan intervals, physical_regs
-      # TODO(max): Make unhandled a deque for fast front pop
-      # unhandled = list of intervals sorted by increasing start positions
-      unhandled = intervals.values.sort_by(&:from)
-      active = Set.new
-      inactive = Set.new
-      handled = Set.new
-      while !unhandled.empty?
-        # current = pick and remove first interval from unhandled
-        current_interval = unhandled.shift
-        position = current_interval.from
-        # check for intervals in active that are handled or inactive
-        active.each do |it|
-          if it.ends_before?(position)
-            active.delete(it)
-            handled.add(it)
-          elsif !it.cover?(position)
-            active.delete(it)
-            inactive.add(it)
-          end
-        end
-        # check for intervals in inactive that are handled or active
-        inactive.each do |it|
-          if it.ends_before?(position)
-            inactive.delete(it)
-            handled.add(it)
-          elsif it.cover?(position)
-            inactive.delete(it)
-            active.add(it)
-          end
-        end
-        # try to find a register for current
-        puts "position #{position} inactive is #{inactive}"
-        allocated = try_allocate_free_reg(physical_regs, active, inactive, current_interval)
-        if !allocated
-          raise "No register available for interval"
-        end
-        if current_interval.register
-          active.add(current_interval)
-        end
-      end
-    end
-
-    def try_allocate_free_reg physical_regs, active, inactive, current_interval
-      maxint = 1_000_000
-      free_until_pos = physical_regs.map { |reg| [reg, maxint] }.to_h
-      active.each do |it|
-        free_until_pos[it.register] = 0
-      end
-      inactive.select {|it| it.intersect_with?(current_interval) }.each do |it|
-        # TODO(max): Minimum of existing free_until_pos
-        free_until_pos[it.register] = it.next_intersection(current_interval)
-      end
-      reg = free_until_pos.max_by { |_, pos| pos }[0]
-      if free_until_pos[reg] == 0
-        puts free_until_pos
-        raise "TODO: spill"
-        # no register available without spilling
-        return false
-      end
-      if current_interval.ends_before?(free_until_pos[reg])
-        # register available for the whole interval
-        current_interval.register = reg
-        return true
-      end
-      raise "TODO: split"
-      # register available for the first part of the interval
-      current_interval.register = reg
-      current_interval.split_before(free_until_pos[reg])
     end
 
     def rpo
