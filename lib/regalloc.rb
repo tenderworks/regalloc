@@ -172,29 +172,38 @@ module Regalloc
       end
     end
 
+    def compute_initial_liveness_sets order
+      gen = Hash.new 0
+      kill = Hash.new 0
+      order.each do |block|
+        block.instructions.each do |insn|
+          out = insn.out&.as_vreg
+          if out
+            kill[block] |= (1 << out.num)
+          end
+          insn.vreg_ins.each do |vreg|
+            gen[block] |= (1 << vreg.num)
+          end
+        end
+        block.parameters.each do |param|
+          kill[block] |= (1 << param.num)
+        end
+      end
+      [gen, kill]
+    end
+
     def analyze_liveness
       # Map from Block to bitset of VRegs live at entry
       order = po
+      gen, kill = compute_initial_liveness_sets(order)
       live_in = Hash.new 0
       changed = true
       while changed
         changed = false
         for block in order
           block_live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
-          for insn in block.instructions.reverse
-            # Defined vregs are not live-in
-            out = insn.out&.as_vreg
-            if out
-              block_live &= ~(1 << out.num)
-            end
-            # Used vregs are live-in
-            block_live |= insn.vreg_ins.map { |vreg| 1 << vreg.num }.reduce(0, :|)
-          end
-          # Except for block parameters, which are implicitly defined at the
-          # start of the block
-          for param in block.parameters
-            block_live &= ~(1 << param.num)
-          end
+          block_live |= gen[block]
+          block_live &= ~kill[block]
           if live_in[block] != block_live
             changed = true
             live_in[block] = block_live
