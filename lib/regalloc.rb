@@ -151,7 +151,7 @@ module Regalloc
       active = []  # Active intervals, sorted by increasing end point
       assignment = {}  # Map from Interval to PReg|StackSlot
       # Iterate through intervals in order of increasing start point
-      intervals.sort_by { |_, interval| interval.range.begin }.each do |vreg, interval|
+      intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
         # expire_old_intervals(interval)
         active.select! do |active_interval|
           if active_interval.range.end >= interval.range.begin
