@@ -45,7 +45,6 @@ class LivenessTests < Minitest::Test
   def test_build_live_intervals
     live_in = func.analyze_liveness
     func.number_instructions!
-    pp func
     intervals = func.build_intervals live_in
     assert_equal 16..36, intervals[@r10].range
     assert_equal 16..20, intervals[@r11].range
@@ -53,7 +52,16 @@ class LivenessTests < Minitest::Test
     assert_equal 20..30, intervals[@r13].range
     assert_equal 28..34, intervals[@r14].range
     assert_equal 30..34, intervals[@r15].range
+  end
+
+  def test_linear_scan
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    pp func
+    intervals = func.build_intervals live_in
     pp intervals
+    assignments = func.ye_olde_linear_scan intervals, 4
+    pp assignments
   end
 
   def build_func

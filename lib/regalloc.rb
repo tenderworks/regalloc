@@ -72,6 +72,14 @@ module Regalloc
       raise if !@range
       @range = Range.new(from, @range.end)
     end
+
+    def inspect
+      if @range
+        "Range(#{@range.begin}, #{@range.end})"
+      else
+        "Range(nil, nil)"
+      end
+    end
   end
 
   class Function
@@ -127,6 +135,43 @@ module Regalloc
         end
       end
       intervals
+    end
+
+    def ye_olde_linear_scan intervals, num_registers
+      # TODO(max): Use a bitset in Rust
+      free_registers = Set.new
+      (0...num_registers).each do |i|
+        free_registers.add(i)
+      end
+      sorted = intervals.sort_by { |_, interval| interval.range.begin }
+      # Aaron wants to call this "ActiveStorage" >:( >:( >:(
+      active = []
+      assignment = {}  # Map from Interval to PReg|StackSlot
+      sorted.each do |vreg, interval|
+        # expire_old_intervals(interval)
+        active.select! do |active_interval|
+          if active_interval.range.end >= interval.range.begin
+            true
+          else
+            operand = assignment.fetch(active_interval)
+            raise "Should be assigned a register" unless operand.is_a?(PReg)
+            free_registers.add(operand.name)
+            false
+          end
+        end
+        if active.length == num_registers
+          # spill_at_interval(interval)
+          raise "Can't spill yet. Current interval #{interval.inspect}. Current map: #{assignment.inspect}"
+        else
+          # TODO(max): Use ctz to get a free register
+          reg = free_registers.first
+          free_registers.delete(reg)
+          assignment[interval] = PReg.new(reg)
+          active << interval
+          active.sort_by! { |i| i.range.end }  # TODO(max): Faster bubble
+        end
+      end
+      assignment
     end
 
     # def allocate_registers
@@ -353,7 +398,19 @@ module Regalloc
     end
 
     def inspect
-      @name.to_s
+      "P#{@name}"
+    end
+  end
+
+  class StackSlot < Operand
+    attr_reader :index
+
+    def initialize index
+      @index = index
+    end
+
+    def inspect
+      "Stack[#{@index}]"
     end
   end
 
