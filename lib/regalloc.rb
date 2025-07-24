@@ -75,6 +75,23 @@ module Regalloc
     end
   end
 
+  class OurRange
+    attr_accessor :begin, :end
+
+    def initialize(from:, to:)
+      @begin = from
+      @end = to
+    end
+
+    def inspect
+      "[#{@begin}..#{@end})"
+    end
+
+    def ==(other)
+      other.is_a?(OurRange) && @begin == other.begin && @end == other.end
+    end
+  end
+
   class Function
     attr_accessor :entry_block
     attr_reader :instructions
@@ -90,6 +107,7 @@ module Regalloc
       number = 16
       rpo.each do |blk|
         blk.from = number
+        @instructions[number] = blk
         number += 2
         blk.instructions.each do |insn|
           @instructions[number] = insn
@@ -100,6 +118,12 @@ module Regalloc
       end
     end
 
+    # def allocate_registers
+    #   1. schedule (number instructions)
+    #   2. backward iteration to calculate live ranges
+    #   3. normal linear scan
+    #   4. ssa resolution (incl parallel moves)
+    # end
 
     def rpo
       po.reverse
@@ -190,21 +214,6 @@ module Regalloc
 
       post_order << self
       post_order
-    end
-
-    def pretty_print(pp)
-      pp.text "Block"
-      if parameters.any?
-        pp.text " (#{parameters.map(&:inspect).join(", ")})"
-      end
-      pp.text ":"
-      pp.breakable
-      pp.group(2, "", "") do
-        instructions.each do |insn|
-          pp.pp insn
-          pp.breakable
-        end
-      end
     end
   end
 

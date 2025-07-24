@@ -34,6 +34,13 @@ class LivenessTests < Minitest::Test
     assert_equal nums, nums.uniq
   end
 
+  def test_build_ranges
+    func.number_instructions!
+    pp func
+    ranges = func.build_ranges
+    pp ranges
+  end
+
   def build_func
     func = Regalloc::Function.new
 
