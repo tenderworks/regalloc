@@ -54,12 +54,27 @@ class LivenessTests < Minitest::Test
     assert_equal 30..34, intervals[@r15].range
   end
 
-  def test_linear_scan
+  def test_linear_scan_no_spill
     live_in = func.analyze_liveness
     func.number_instructions!
     pp func
     intervals = func.build_intervals live_in
     assignments = func.ye_olde_linear_scan intervals, 5
+    pp assignments
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r10]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r12]]
+    assert_equal Regalloc::PReg.new(3), assignments[intervals[@r13]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(4), assignments[intervals[@r15]]
+  end
+
+  def test_linear_scan_spill
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    pp func
+    intervals = func.build_intervals live_in
+    assignments = func.ye_olde_linear_scan intervals, 1
     pp assignments
     assert_equal Regalloc::PReg.new(0), assignments[intervals[@r10]]
     assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
