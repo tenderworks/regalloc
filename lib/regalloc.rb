@@ -147,11 +147,10 @@ module Regalloc
       (0...num_registers).each do |i|
         free_registers.add(i)
       end
-      sorted = intervals.sort_by { |_, interval| interval.range.begin }
       # Aaron wants to call this "ActiveStorage" >:( >:( >:(
       active = []
       assignment = {}  # Map from Interval to PReg|StackSlot
-      sorted.each do |vreg, interval|
+      intervals.sort_by { |_, interval| interval.range.begin }.each do |vreg, interval|
         # expire_old_intervals(interval)
         active.select! do |active_interval|
           if active_interval.range.end >= interval.range.begin
