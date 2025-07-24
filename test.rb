@@ -82,6 +82,20 @@ class LivenessTests < Minitest::Test
     assert_equal Regalloc::StackSlot.new(3), assignments[intervals[@r15]]
   end
 
+  def test_linear_scan_spill_less
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
+    assert_equal 2, num_stack_slots
+    assert_equal Regalloc::StackSlot.new(0), assignments[intervals[@r10]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
+    assert_equal Regalloc::StackSlot.new(1), assignments[intervals[@r12]]
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r13]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r15]]
+  end
+
   def build_func
     func = Regalloc::Function.new
 
