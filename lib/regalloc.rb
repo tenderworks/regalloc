@@ -170,6 +170,7 @@ module Regalloc
           # a heuristic from the original linear scan paper.
           spill = active.last
           # In either case, we need to allocate a slot on the stack.
+          # TODO(max): Reuse freed stack slots
           slot = StackSlot.new(num_stack_slots)
           num_stack_slots += 1
           if spill.range.end > interval.range.end
