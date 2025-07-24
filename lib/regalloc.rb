@@ -148,8 +148,9 @@ module Regalloc
         free_registers.add(i)
       end
       # Aaron wants to call this "ActiveStorage" >:( >:( >:(
-      active = []
+      active = []  # Active intervals, sorted by increasing end point
       assignment = {}  # Map from Interval to PReg|StackSlot
+      # Iterate through intervals in order of increasing start point
       intervals.sort_by { |_, interval| interval.range.begin }.each do |vreg, interval|
         # expire_old_intervals(interval)
         active.select! do |active_interval|
@@ -170,8 +171,9 @@ module Regalloc
           reg = free_registers.min
           free_registers.delete(reg)
           assignment[interval] = PReg.new(reg)
-          active << interval
-          active.sort_by! { |i| i.range.end }  # TODO(max): Faster bubble
+          # Insert interval into already-sorted active
+          insert_idx = active.bsearch_index { |i| i.range.end >= interval.range.end } || active.length
+          active.insert(insert_idx, interval)
         end
       end
       assignment
