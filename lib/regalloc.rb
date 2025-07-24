@@ -143,10 +143,7 @@ module Regalloc
 
     def ye_olde_linear_scan intervals, num_registers
       # TODO(max): Use a bitset in Rust
-      free_registers = Set.new
-      (0...num_registers).each do |i|
-        free_registers.add(i)
-      end
+      free_registers = Set.new 0...num_registers
       # Aaron wants to call this "ActiveStorage" >:( >:( >:(
       active = []  # Active intervals, sorted by increasing end point
       assignment = {}  # Map from Interval to PReg|StackSlot
