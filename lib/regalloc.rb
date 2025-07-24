@@ -80,6 +80,10 @@ module Regalloc
         "Range(nil, nil)"
       end
     end
+
+    def ==(other)
+      other.is_a?(Interval) && @range == other.range
+    end
   end
 
   class Function
@@ -399,6 +403,10 @@ module Regalloc
 
     def inspect
       "P#{@name}"
+    end
+
+    def == other
+      other.is_a?(PReg) && @name == other.name
     end
   end
 

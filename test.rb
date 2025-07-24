@@ -59,9 +59,14 @@ class LivenessTests < Minitest::Test
     func.number_instructions!
     pp func
     intervals = func.build_intervals live_in
-    pp intervals
-    assignments = func.ye_olde_linear_scan intervals, 4
+    assignments = func.ye_olde_linear_scan intervals, 5
     pp assignments
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r10]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r12]]
+    assert_equal Regalloc::PReg.new(3), assignments[intervals[@r13]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(4), assignments[intervals[@r15]]
   end
 
   def build_func
