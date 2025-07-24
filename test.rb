@@ -28,48 +28,10 @@ class LivenessTests < Minitest::Test
     @func = build_func
   end
 
-  def test_live_in
-    live_in = func.analyze_liveness
-    assert_equal bitset_to_names(live_in[@b1], func), []
-    assert_equal bitset_to_names(live_in[@b2], func), [@r10]
-    assert_equal bitset_to_names(live_in[@b3], func), [@r10, @r12, @r13]
-    assert_equal bitset_to_names(live_in[@b4], func), [@r10, @r12]
-  end
-
   def test_numbering
-    func.analyze_liveness
     func.number_instructions!
     nums = func.instructions.compact.map(&:number)
     assert_equal nums, nums.uniq
-  end
-
-  def test_build_intervals
-    # for each block b in order do
-    #   live = live_in[b]
-    #
-    #   for each phi function phi of successors of b do
-    #     live.add(phi.inputOf(b))
-    #
-    #   for each opd in live do
-    #     intervals[opd].addRange(b.from, b.to)
-    #
-    #   for each operation op of b in reverse order do
-    #     for each output operand opd of op do
-    #       intervals[opd].setFrom(op.id)
-    #
-    #     for each input operand opd of op do
-    #       intervals[opd].addRange(b.from, op.id)
-    #
-    pp func
-    live_in = func.analyze_liveness
-    func.number_instructions!
-    intervals = func.build_intervals live_in
-    assert_equal [16..36], intervals[@r10].ranges
-    assert_equal [16..20], intervals[@r11].ranges
-    assert_equal [20..28, 34..36], intervals[@r12].ranges
-    assert_equal [20..30], intervals[@r13].ranges
-    assert_equal [28..34], intervals[@r14].ranges
-    assert_equal [30..34], intervals[@r15].ranges
   end
 
   def build_func

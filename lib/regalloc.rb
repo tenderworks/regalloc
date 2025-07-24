@@ -100,34 +100,6 @@ module Regalloc
       end
     end
 
-    def build_intervals live_in
-      intervals = Hash.new { |hash, key| hash[key] = Interval.new }
-      rpo.each do |block|
-        # live = union of successor.liveIn for each successor of b
-        live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
-        # for each phi function phi of successors of b do
-        #   live.add(phi.inputOf(b))
-        live |= block.out_vregs.map { |vreg| 1 << vreg.num }.reduce(0, :|)
-        each_bit(live) do |idx|
-          opd = vreg idx
-          intervals[opd].add_range(block.from, block.to)
-        end
-        block.instructions.reverse.each do |insn|
-          out = insn.out&.as_vreg
-          if out
-            # for each output operand opd of op do
-            #   intervals[opd].setFrom(op.id)
-            intervals[out].set_from(insn.number)
-          end
-          # for each input operand opd of op do
-          #   intervals[opd].addRange(b.from, op.id)
-          insn.vreg_ins.each do |opd|
-            intervals[opd].add_range(block.from, insn.number)
-          end
-        end
-      end
-      intervals
-    end
 
     def rpo
       po.reverse
@@ -170,47 +142,6 @@ module Regalloc
           pp.breakable
         end
       end
-    end
-
-    def compute_initial_liveness_sets order
-      gen = Hash.new 0
-      kill = Hash.new 0
-      order.each do |block|
-        block.instructions.each do |insn|
-          out = insn.out&.as_vreg
-          if out
-            kill[block] |= (1 << out.num)
-          end
-          insn.vreg_ins.each do |vreg|
-            gen[block] |= (1 << vreg.num)
-          end
-        end
-        block.parameters.each do |param|
-          kill[block] |= (1 << param.num)
-        end
-      end
-      [gen, kill]
-    end
-
-    def analyze_liveness
-      # Map from Block to bitset of VRegs live at entry
-      order = po
-      gen, kill = compute_initial_liveness_sets(order)
-      live_in = Hash.new 0
-      changed = true
-      while changed
-        changed = false
-        for block in order
-          block_live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
-          block_live |= gen[block]
-          block_live &= ~kill[block]
-          if live_in[block] != block_live
-            changed = true
-            live_in[block] = block_live
-          end
-        end
-      end
-      live_in
     end
   end
 
