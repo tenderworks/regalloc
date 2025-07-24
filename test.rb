@@ -28,17 +28,32 @@ class LivenessTests < Minitest::Test
     @func = build_func
   end
 
+  def test_live_in
+    live_in = func.analyze_liveness
+    assert_equal bitset_to_names(live_in[@b1], func), []
+    assert_equal bitset_to_names(live_in[@b2], func), [@r10]
+    assert_equal bitset_to_names(live_in[@b3], func), [@r10, @r12, @r13]
+    assert_equal bitset_to_names(live_in[@b4], func), [@r10, @r12]
+  end
+
   def test_numbering
     func.number_instructions!
     nums = func.instructions.compact.map(&:number)
     assert_equal nums, nums.uniq
   end
 
-  def test_build_ranges
+  def test_build_live_intervals
+    live_in = func.analyze_liveness
     func.number_instructions!
     pp func
-    ranges = func.build_ranges
-    pp ranges
+    intervals = func.build_intervals live_in
+    assert_equal 16..36, intervals[@r10].range
+    assert_equal 16..20, intervals[@r11].range
+    assert_equal 20..36, intervals[@r12].range
+    assert_equal 20..30, intervals[@r13].range
+    assert_equal 28..34, intervals[@r14].range
+    assert_equal 30..34, intervals[@r15].range
+    pp intervals
   end
 
   def build_func

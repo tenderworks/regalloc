@@ -51,44 +51,26 @@ module Regalloc
   end
 
   class Interval
-    attr_reader :ranges
+    attr_reader :range
 
     def initialize
-      @ranges = []
+      @range = nil
     end
 
     def add_range(from, to)
       if to <= from
         raise ArgumentError, "Invalid range: #{from} to #{to}"
       end
-      if @ranges.any? && @ranges.last.end == from
-        @ranges[-1] = Range.new(@ranges[-1].begin, to)
-      elsif @ranges.any? && @ranges.last.cover?(from)
-        # Do nothing
-      else
-        @ranges << Range.new(from, to)
+      if !@range
+        @range = Range.new(from, to)
+        return
       end
+      @range = Range.new([@range.begin, from].min, [@range.end, to].max)
     end
 
     def set_from(from)
-      @ranges[-1] = Range.new(from, @ranges[-1].end)
-    end
-  end
-
-  class OurRange
-    attr_accessor :begin, :end
-
-    def initialize(from:, to:)
-      @begin = from
-      @end = to
-    end
-
-    def inspect
-      "[#{@begin}..#{@end})"
-    end
-
-    def ==(other)
-      other.is_a?(OurRange) && @begin == other.begin && @end == other.end
+      raise if !@range
+      @range = Range.new(from, @range.end)
     end
   end
 
@@ -114,34 +96,37 @@ module Regalloc
           insn.number = number
           number += 2
         end
+        blk.to = number
       end
     end
 
-    def build_ranges
-      if @instructions.empty?
-        raise "No instructions to build ranges from"
-      end
-      ranges = {}
-      @instructions.to_enum.with_index.reverse_each do |insn, idx|
-        next unless insn  # Instructions at are every other index
-        if insn.is_a?(Block)
-          insn.parameters.each do |param|
-            # Since we're iterating in reverse order, we will always see a use before a def.
-            (ranges[param] || raise("Use before def")).begin = idx
+    def build_intervals live_in
+      intervals = Hash.new { |hash, key| hash[key] = Interval.new }
+      rpo.each do |block|
+        # live = union of successor.liveIn for each successor of b
+        live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
+        # for each phi function phi of successors of b do
+        #   live.add(phi.inputOf(b))
+        live |= block.out_vregs.map { |vreg| 1 << vreg.num }.reduce(0, :|)
+        each_bit(live) do |idx|
+          opd = vreg idx
+          intervals[opd].add_range(block.from, block.to)
+        end
+        block.instructions.reverse.each do |insn|
+          out = insn.out&.as_vreg
+          if out
+            # for each output operand opd of op do
+            #   intervals[opd].setFrom(op.id)
+            intervals[out].set_from(insn.number)
           end
-          next
-        end
-        out = insn.out&.as_vreg
-        if out
-          # Since we're iterating in reverse order, we will always see a use before a def.
-          (ranges[out] || raise("Use before def")).begin = idx
-        end
-        insn.vreg_ins.each do |opd|
-          # Since we're iterating in reverse order, we always see the last use first.
-          ranges[opd] ||= OurRange.new(from: nil, to: idx)
+          # for each input operand opd of op do
+          #   intervals[opd].addRange(b.from, op.id)
+          insn.vreg_ins.each do |opd|
+            intervals[opd].add_range(block.from, insn.number)
+          end
         end
       end
-      ranges
+      intervals
     end
 
     # def allocate_registers
@@ -194,6 +179,47 @@ module Regalloc
         end
       end
     end
+
+    def compute_initial_liveness_sets order
+      gen = Hash.new 0
+      kill = Hash.new 0
+      order.each do |block|
+        block.instructions.each do |insn|
+          out = insn.out&.as_vreg
+          if out
+            kill[block] |= (1 << out.num)
+          end
+          insn.vreg_ins.each do |vreg|
+            gen[block] |= (1 << vreg.num)
+          end
+        end
+        block.parameters.each do |param|
+          kill[block] |= (1 << param.num)
+        end
+      end
+      [gen, kill]
+    end
+
+    def analyze_liveness
+      # Map from Block to bitset of VRegs live at entry
+      order = po
+      gen, kill = compute_initial_liveness_sets(order)
+      live_in = Hash.new 0
+      changed = true
+      while changed
+        changed = false
+        for block in order
+          block_live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
+          block_live |= gen[block]
+          block_live &= ~kill[block]
+          if live_in[block] != block_live
+            changed = true
+            live_in[block] = block_live
+          end
+        end
+      end
+      live_in
+    end
   end
 
   class Block
@@ -202,7 +228,8 @@ module Regalloc
     attr_reader :instructions
     attr_reader :parameters
     attr_reader :func
-    attr_accessor :number
+    attr_accessor :number, :to
+    alias :from :number
 
     def initialize func, idx, insns, parameters
       @func = func
