@@ -142,11 +142,15 @@ module Regalloc
     end
 
     def ye_olde_linear_scan intervals, num_registers
+      if num_registers <= 0
+        raise ArgumentError, "Number of registers must be positive"
+      end
       # TODO(max): Use a bitset in Rust
       free_registers = Set.new 0...num_registers
       # Aaron wants to call this "ActiveStorage" >:( >:( >:(
       active = []  # Active intervals, sorted by increasing end point
       assignment = {}  # Map from Interval to PReg|StackSlot
+      num_stack_slots = 0
       # Iterate through intervals in order of increasing start point
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
         # expire_old_intervals(interval)
@@ -162,7 +166,25 @@ module Regalloc
         end
         if active.length == num_registers
           # spill_at_interval(interval)
-          raise "Can't spill yet. Current interval #{interval.inspect}. Current map: #{assignment.inspect}"
+          # Pick an interval to spill. Picking the longest-lived active one is
+          # a heuristic from the original linear scan paper.
+          spill = active.last
+          # In either case, we need to allocate a slot on the stack.
+          slot = StackSlot.new(num_stack_slots)
+          num_stack_slots += 1
+          if spill.range.end > interval.range.end
+            # The last active interval ends further away than the current interval; spill it.
+            assignment[interval] = assignment[spill]
+            raise "Should be assigned a register" unless assignment[interval].is_a?(PReg)
+            assignment[spill] = slot
+            active.pop  # We know spill is the last one
+            # Insert interval into already-sorted active
+            insert_idx = active.bsearch_index { |i| i.range.end >= interval.range.end } || active.length
+            active.insert(insert_idx, interval)
+          else
+            # The current interval ends further away than the last active interval; spill it.
+            assignment[interval] = slot
+          end
         else
           # TODO(max): Use ctz to get lowest free register
           reg = free_registers.min
@@ -173,7 +195,7 @@ module Regalloc
           active.insert(insert_idx, interval)
         end
       end
-      assignment
+      [assignment, num_stack_slots]
     end
 
     # def allocate_registers
@@ -417,6 +439,10 @@ module Regalloc
 
     def inspect
       "Stack[#{@index}]"
+    end
+
+    def == other
+      other.is_a?(StackSlot) && @index == other.index
     end
   end
 
