@@ -106,7 +106,7 @@ module Regalloc
     def number_instructions!
       number = 16
       rpo.each do |blk|
-        blk.from = number
+        blk.number = number
         @instructions[number] = blk
         number += 2
         blk.instructions.each do |insn|
@@ -114,7 +114,6 @@ module Regalloc
           insn.number = number
           number += 2
         end
-        blk.to = number
       end
     end
 
@@ -154,6 +153,7 @@ module Regalloc
       pp.text "Function:"
       pp.breakable
       rpo.each_with_index do |block, i|
+        pp.text "#{block.number}: " if block.number
         pp.breakable if i > 0
         pp.text "  #{block.name}:"
         if block.parameters.any?
@@ -175,16 +175,13 @@ module Regalloc
     attr_reader :instructions
     attr_reader :parameters
     attr_reader :func
-    attr_accessor :from
-    attr_accessor :to
+    attr_accessor :number
 
     def initialize func, idx, insns, parameters
       @func = func
       @instructions = insns
       @parameters = parameters
       @idx = idx
-      @from = nil
-      @to = nil
     end
 
     def name
