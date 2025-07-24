@@ -117,6 +117,33 @@ module Regalloc
       end
     end
 
+    def build_ranges
+      if @instructions.empty?
+        raise "No instructions to build ranges from"
+      end
+      ranges = {}
+      @instructions.to_enum.with_index.reverse_each do |insn, idx|
+        next unless insn  # Instructions at are every other index
+        if insn.is_a?(Block)
+          insn.parameters.each do |param|
+            # Since we're iterating in reverse order, we will always see a use before a def.
+            (ranges[param] || raise("Use before def")).begin = idx
+          end
+          next
+        end
+        out = insn.out&.as_vreg
+        if out
+          # Since we're iterating in reverse order, we will always see a use before a def.
+          (ranges[out] || raise("Use before def")).begin = idx
+        end
+        insn.vreg_ins.each do |opd|
+          # Since we're iterating in reverse order, we always see the last use first.
+          ranges[opd] ||= OurRange.new(from: nil, to: idx)
+        end
+      end
+      ranges
+    end
+
     # def allocate_registers
     #   1. schedule (number instructions)
     #   2. backward iteration to calculate live ranges
