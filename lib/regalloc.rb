@@ -199,6 +199,35 @@ module Regalloc
       [assignment, num_stack_slots]
     end
 
+    def resolve_ssa intervals, assignments
+      rpo.each do |predecessor|
+        predecessor.edges.each do |edge|
+          mapping = {}
+          # We don't do interval splitting, so intervals are either in one
+          # place for the whole time (not a thing we need to generate a move
+          # for) or we are doing an inter-block argument->parameter move.
+          #
+          # Therefore, we only need to find intervals that start at the
+          # beginning of the successor, AKA block params.
+          successor = edge.block
+          edge.args.zip(successor.parameters).each do |src, dst|
+            moveFrom = if src.is_a?(Immediate)
+                         src
+                       else
+                         assignments[intervals[src]]
+                       end
+            moveTo = assignments[intervals[dst]]
+            if moveFrom != moveTo
+              mapping[moveFrom] = moveTo
+            end
+          end
+          # TODO(max): Order and insert moves
+          # TODO(max): Critical edge splitting? Where do we put the moves?
+          predecessor.order_and_insert_moves(mapping)
+        end
+      end
+    end
+
     # def allocate_registers
     #   1. schedule (number instructions)
     #   2. backward iteration to calculate live ranges
@@ -316,8 +345,12 @@ module Regalloc
       @instructions << insn
     end
 
+    def edges
+      @instructions.last.dests
+    end
+
     def successors
-      @instructions.last.dests.map(&:block)
+      edges.map(&:block)
     end
 
     def out_vregs
