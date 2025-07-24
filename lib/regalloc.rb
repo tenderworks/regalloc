@@ -163,8 +163,8 @@ module Regalloc
           # spill_at_interval(interval)
           raise "Can't spill yet. Current interval #{interval.inspect}. Current map: #{assignment.inspect}"
         else
-          # TODO(max): Use ctz to get a free register
-          reg = free_registers.first
+          # TODO(max): Use ctz to get lowest free register
+          reg = free_registers.sort.first
           free_registers.delete(reg)
           assignment[interval] = PReg.new(reg)
           active << interval
