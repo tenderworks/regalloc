@@ -220,6 +220,7 @@ module Regalloc
     end
 
     def pretty_print(pp)
+      pp.text "#{@number}: " if @number
       if @out
         pp.text "#{@out.inspect} = "
       end
