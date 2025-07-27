@@ -279,6 +279,42 @@ module Regalloc
       end
     end
 
+    def graphviz
+      result = "digraph G {\n"
+      result << <<~END
+       node [shape=plaintext]
+      END
+      rpo.each do |block|
+        result << <<~END
+          #{block.name} [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+        END
+        params = block.parameters.map(&:inspect).join(", ")
+        result << <<~END
+          <TR><TD PORT="params" BGCOLOR="gray">#{block.name}(#{params})&nbsp;</TD></TR>
+        END
+        block.instructions.each_with_index do |insn, idx|
+          out = if insn.out
+                  "#{insn.out.inspect} = "
+                else
+                  ""
+                end
+          ins = insn.ins.map(&:inspect).join(", ")
+          result << <<~END
+            <TR><TD ALIGN="left" PORT="#{idx}">#{out}#{insn.name} #{ins}&nbsp;</TD></TR>
+          END
+        end
+        result << <<~END
+          </TABLE>>];
+        END
+        last_index = block.instructions.length - 1
+        block.successors.each do |succ|
+          result << "#{block.name}:#{last_index} -> #{succ.name}:params;\n"
+        end
+      end
+      result << "}"
+      result
+    end
+
     def compute_initial_liveness_sets order
       gen = Hash.new 0
       kill = Hash.new 0
