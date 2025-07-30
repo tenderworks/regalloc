@@ -115,6 +115,10 @@ module Regalloc
       end
     end
 
+    # TODO(max): Handle calls.
+    # We need to do register move/hint stuff for parameters and return
+    # We need to do spilling of live-across vregs ("survivors")
+
     def build_intervals live_in
       intervals = Hash.new { |hash, key| hash[key] = Interval.new }
       @block_order.each do |block|
