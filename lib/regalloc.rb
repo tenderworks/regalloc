@@ -224,10 +224,6 @@ module Regalloc
               mapping << [moveFrom, moveTo]
             end
           end
-          thing = {}
-          intervals.each_key do |vreg|
-            thing[vreg] = assignments[intervals[vreg]]
-          end
           # predecessor.order_and_insert_moves(mapping)
           sequence = sequentialize mapping
           # TODO(max): Insert moves
