@@ -96,6 +96,16 @@ class LivenessTests < Minitest::Test
     assert_equal Regalloc::PReg.new(2), assignments[intervals[@r15]]
   end
 
+  def test_resolve
+    func = build_smaller_func
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
+    pp func
+    func.resolve_ssa intervals, assignments
+  end
+
   def build_func
     func = Regalloc::Function.new
 
@@ -131,6 +141,52 @@ class LivenessTests < Minitest::Test
 
     b4.define do
       out = add(r10, r12)
+      ret out
+    end
+
+    func.entry_block = b1
+    func
+  end
+
+  def build_smaller_func
+    ##
+    # def foo x
+    #   entry(x):
+    #   if x < 0 # blt iftrue: lt_side(x), iffalse: gt_side(x)
+
+    #     lt_side(y):
+    #     foo = rand()
+    #     cmp foo, 0.5
+    #     blt rand_lt_side(y), rand_gt_side(y)
+    #     if rand() < 0.5
+    #       # rand_lt_side(z):
+    #     end
+    #   else # gt_side(y):
+    #   end
+    # end
+    func = Regalloc::Function.new
+
+    r10 = @r10 = func.next_vreg
+    r11 = @r11 = func.next_vreg
+    r12 = @r12 = func.next_vreg
+    r13 = @r13 = func.next_vreg
+
+    b1 = @b1 = func.new_block
+    b2 = @b2 = func.new_block
+    b3 = @b3 = func.new_block
+
+    b1.define(r10, r11) do
+      cmp r10, imm(0)
+      blt iftrue: edge(b2, [r11]), iffalse: edge(b3, [imm(1)])
+    end
+
+    b2.define(r13) do
+      out = add(r13, imm(1))
+      ret out
+    end
+
+    b3.define(r12) do
+      out = sub(r12, imm(1))
       ret out
     end
 

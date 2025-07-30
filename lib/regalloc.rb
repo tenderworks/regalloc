@@ -1,4 +1,5 @@
 require "set"
+require "parcopy"
 
 module Regalloc
   module DSL
@@ -202,7 +203,7 @@ module Regalloc
     def resolve_ssa intervals, assignments
       rpo.each do |predecessor|
         predecessor.edges.each do |edge|
-          mapping = {}
+          mapping = []
           # We don't do interval splitting, so intervals are either in one
           # place for the whole time (not a thing we need to generate a move
           # for) or we are doing an inter-block argument->parameter move.
@@ -218,12 +219,17 @@ module Regalloc
                        end
             moveTo = assignments[intervals[dst]]
             if moveFrom != moveTo
-              mapping[moveFrom] = moveTo
+              mapping << [moveFrom, moveTo]
             end
           end
-          # TODO(max): Order and insert moves
+          thing = {}
+          intervals.each_key do |vreg|
+            thing[vreg] = assignments[intervals[vreg]]
+          end
+          # predecessor.order_and_insert_moves(mapping)
+          sequence = sequentialize mapping
+          # TODO(max): Insert moves
           # TODO(max): Critical edge splitting? Where do we put the moves?
-          predecessor.order_and_insert_moves(mapping)
         end
       end
     end
