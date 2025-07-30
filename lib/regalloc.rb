@@ -96,11 +96,13 @@ module Regalloc
       @next_blk_name = 1
       @vregs = {}
       @instructions = []
+      @block_order = nil
     end
 
     def number_instructions!
+      @block_order = rpo
       number = 16
-      rpo.each do |blk|
+      @block_order.each do |blk|
         blk.number = number
         @instructions[number] = blk
         number += 2
@@ -115,7 +117,7 @@ module Regalloc
 
     def build_intervals live_in
       intervals = Hash.new { |hash, key| hash[key] = Interval.new }
-      rpo.each do |block|
+      @block_order.each do |block|
         # live = union of successor.liveIn for each successor of b
         live = block.successors.map { |succ| live_in[succ] }.reduce(0, :|)
         # for each phi function phi of successors of b do
@@ -201,7 +203,7 @@ module Regalloc
     end
 
     def resolve_ssa intervals, assignments
-      rpo.each do |predecessor|
+      @block_order.each do |predecessor|
         predecessor.edges.each do |edge|
           mapping = []
           # We don't do interval splitting, so intervals are either in one
