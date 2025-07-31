@@ -207,8 +207,16 @@ module Regalloc
     end
 
     def resolve_ssa intervals, assignments
+      num_predecessors = Hash.new 0
+      @block_order.each do |block|
+        block.edges.each do |edge|
+          num_predecessors[edge.block] += 1
+        end
+      end
       @block_order.each do |predecessor|
-        predecessor.edges.each do |edge|
+        outgoing_edges = predecessor.edges
+        num_successors = outgoing_edges.length
+        outgoing_edges.each do |edge|
           mapping = []
           # We don't do interval splitting, so intervals are either in one
           # place for the whole time (not a thing we need to generate a move
@@ -229,11 +237,25 @@ module Regalloc
             end
           end
           # predecessor.order_and_insert_moves(mapping)
-          sequence = sequentialize mapping
+          sequence = sequentialize(mapping).map do |(src, _, dst)|
+            Insn.new(:mov, dst, [src])
+          end
+          if num_predecessors[successor] > 1 && num_successors > 1
+            raise "TODO: insert a new block"
+          elsif num_successors > 1
+            # Insert into the beginning of the block
+            # raise "May not happen??????"
+            successor.insert_moves_at_start sequence
+          else
+            # Insert into the end of the block... before the terminator
+            predecessor.insert_moves_at_end sequence
+          end
           # TODO(max): Insert moves
           # TODO(max): Critical edge splitting? Where do we put the moves?
         end
       end
+      # TODO(max): Recalculate @block_order since we inserted new splitting
+      # blocks
     end
 
     # def allocate_registers
@@ -412,6 +434,15 @@ module Regalloc
 
       post_order << self
       post_order
+    end
+
+    def insert_moves_at_start moves
+      @instructions.unshift *moves
+    end
+
+    def insert_moves_at_end moves
+      # Insert before the terminator (at -1)
+      @instructions.insert(-2, *moves)
     end
   end
 

@@ -97,13 +97,17 @@ class LivenessTests < Minitest::Test
   end
 
   def test_resolve
-    func = build_smaller_func
+    # func = build_smaller_func
+    func = @func
     live_in = func.analyze_liveness
     func.number_instructions!
     intervals = func.build_intervals live_in
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
+    puts "BEFORE"
     pp func
     func.resolve_ssa intervals, assignments
+    puts "AFTER"
+    pp func
   end
 
   def build_func
