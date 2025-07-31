@@ -265,6 +265,8 @@ module Regalloc
           # insert
           next if sequence.empty?
           if num_predecessors[successor] > 1 && num_successors > 1
+            # TODO(max): Figure out a move sequence that actually causes a critical edge split
+            raise "????????"
             b = new_block
             b.insert_moves_at_start sequence
             b.instructions << Insn.new(:jump, nil, [Edge.new(successor, [])])
