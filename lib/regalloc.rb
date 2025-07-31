@@ -29,6 +29,13 @@ module Regalloc
       self << Insn.new(:ret, nil, [innie])
     end
 
+    def loadi imm
+      raise unless imm.is_a? Immediate
+      out = func.next_vreg
+      self << Insn.new(:loadi, out, [imm])
+      out
+    end
+
     def imm v
       Immediate.new v
     end
@@ -70,8 +77,12 @@ module Regalloc
     end
 
     def set_from(from)
-      raise if !@range
-      @range = Range.new(from, @range.end)
+      @range = if @range
+        Range.new(from, @range.end)
+      else
+        # This happens when we don't have a use of the vreg
+        Range.new(from, from)
+      end
     end
 
     def inspect
