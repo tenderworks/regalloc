@@ -261,9 +261,12 @@ module Regalloc
           sequence = sequentialize(mapping).map do |(src, _, dst)|
             Insn.new(:mov, dst, [src])
           end
+          next if sequence.empty?
           if num_predecessors[successor] > 1 && num_successors > 1
-            # TODO(max): Critical edge splitting? Where do we put the moves?
-            raise "TODO: insert a new block"
+            b = new_block
+            b.insert_moves_at_start sequence
+            b.instructions << Insn.new(:jump, nil, [Edge.new(successor, [])])
+            edge.block = b
           elsif num_successors > 1
             # Insert into the beginning of the block
             # raise "May not happen??????"
@@ -602,7 +605,8 @@ module Regalloc
   end
 
   class Edge     < Operand
-    attr_reader :block, :args
+    attr_reader :args
+    attr_accessor :block
 
     def initialize block, args
       raise unless block
