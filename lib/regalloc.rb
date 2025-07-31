@@ -213,7 +213,17 @@ module Regalloc
           num_predecessors[edge.block] += 1
         end
       end
+      replacement_opnd = -> (opnd) { assignments[intervals[opnd]] }
       @block_order.each do |predecessor|
+        predecessor.instructions.each do |insn|
+          out = replacement_opnd.(insn.out)
+          if out
+            insn.out = out
+          end
+          insn.ins.map! do |innie|
+            replacement_opnd.(innie) || innie
+          end
+        end
         outgoing_edges = predecessor.edges
         num_successors = outgoing_edges.length
         outgoing_edges.each do |edge|
@@ -252,6 +262,12 @@ module Regalloc
             predecessor.insert_moves_at_end sequence
           end
           # TODO(max): Rewrite vregs to pregs
+        end
+      end
+      @block_order.each do |block|
+        block.parameters.clear
+        block.edges.each do |edge|
+          edge.args.clear
         end
       end
       # TODO(max): Recalculate @block_order since we inserted new splitting
@@ -447,8 +463,8 @@ module Regalloc
   end
 
   class Insn
-    attr_reader :name, :out, :ins
-    attr_accessor :id, :number
+    attr_reader :name, :ins
+    attr_accessor :id, :number, :out
 
     def initialize name, out, ins
       @name = name
