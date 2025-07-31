@@ -261,6 +261,8 @@ module Regalloc
           sequence = sequentialize(mapping).map do |(src, _, dst)|
             Insn.new(:mov, dst, [src])
           end
+          # If we don't have any moves to insert, we don't have any block to
+          # insert
           next if sequence.empty?
           if num_predecessors[successor] > 1 && num_successors > 1
             b = new_block
