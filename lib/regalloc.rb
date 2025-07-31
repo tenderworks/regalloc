@@ -241,6 +241,7 @@ module Regalloc
             Insn.new(:mov, dst, [src])
           end
           if num_predecessors[successor] > 1 && num_successors > 1
+            # TODO(max): Critical edge splitting? Where do we put the moves?
             raise "TODO: insert a new block"
           elsif num_successors > 1
             # Insert into the beginning of the block
@@ -250,8 +251,7 @@ module Regalloc
             # Insert into the end of the block... before the terminator
             predecessor.insert_moves_at_end sequence
           end
-          # TODO(max): Insert moves
-          # TODO(max): Critical edge splitting? Where do we put the moves?
+          # TODO(max): Rewrite vregs to pregs
         end
       end
       # TODO(max): Recalculate @block_order since we inserted new splitting
