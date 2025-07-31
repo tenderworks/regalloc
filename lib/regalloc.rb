@@ -280,6 +280,7 @@ module Regalloc
           # TODO(max): Rewrite vregs to pregs
         end
       end
+      # Remove all block parameters and arguments; we have resolved SSA
       @block_order.each do |block|
         block.parameters.clear
         block.edges.each do |edge|
