@@ -90,6 +90,7 @@ def move_one i, src, dst, status, result
 end
 
 def leroy_sequentialize copies
+  # https://inria.hal.science/inria-00176007/document
   src = copies.map { it[0] }
   dst = copies.map { it[1] }
   status = [:to_move] * src.length
