@@ -67,6 +67,41 @@ def sequentialize copies
   result
 end
 
+def tmp reg
+  "tmp"
+end
+
+def move_one i, src, dst, status, result
+  return if src[i] == dst[i]
+  status[i] = :being_moved
+  for j in 0...(src.length) do
+    if src[j] == dst[i]
+      case status[j]
+      when :to_move
+        move_one j, src, dst, status, result
+      when :being_moved
+        result << [src[j], "->", tmp(src[j])]
+        src[j] = tmp src[j]
+      end
+    end
+  end
+  result << [src[i], "->", dst[i]]
+  status[i] = :moved
+end
+
+def leroy_sequentialize copies
+  src = copies.map { it[0] }
+  dst = copies.map { it[1] }
+  status = [:to_move] * src.length
+  result = []
+  status.each_with_index do |item, i|
+    if item == :to_move
+      move_one i, src, dst, status, result
+    end
+  end
+  result
+end
+
 class SequentializeTests < Minitest::Test
   def test_empty
     assert_equal [], sequentialize([])
