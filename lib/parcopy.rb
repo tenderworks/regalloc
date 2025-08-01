@@ -146,6 +146,7 @@ class SequentializeTests < Minitest::Test
   end
 
   def test_boissinot_thesis
+    # TODO(max): Figure out why Leroy's fails this
     assert_equal [[:c, "->", :d], [:b, "->", :c], [:a, "->", :b], [:d, "->", :a]], sequentialize([[:a, :b], [:b, :c], [:c, :a], [:c, :d]])
   end
 end
