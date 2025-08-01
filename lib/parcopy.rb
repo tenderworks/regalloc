@@ -44,6 +44,7 @@ def sequentialize copies
       emit_copy.(a, b)
       # pred[b] is now living at b
       loc[pred[b]] = b
+      # TODO(max): Figure out what dstogov means in https://github.com/pfalcon/parcopy/pull/1/files
       if to_do.include?(a)
         to_do.delete a
       end
