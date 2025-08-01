@@ -108,12 +108,16 @@ class SequentializeTests < Minitest::Test
   end
 
   def test_simple
-    #assert_equal [[:a, "->", :b]], sequentialize([[:a, :b]])
+    assert_equal [[:a, "->", :b]], sequentialize([[:a, :b]])
     assert_equal [[:b, "->", :c], [:a, "->", :b]], sequentialize([[:a, :b], [:b, :c]])
   end
 
   def test_multiple
-    assert_equal [[:c, "->", :d], [:a, "->", :b]], sequentialize([[:a, :b], [:c, :d]])
+    options = [
+      [[:c, "->", :d], [:a, "->", :b]],
+      [[:a, "->", :b], [:c, "->", :d]],
+    ]
+    assert_includes options, sequentialize([[:a, :b], [:c, :d]])
   end
 
   def test_transitive
@@ -121,7 +125,11 @@ class SequentializeTests < Minitest::Test
   end
 
   def test_fan_out
-    assert_equal [[:a, "->", :c], [:c, "->", :b]], sequentialize([[:a, :b], [:a, :c]])
+    options = [
+      [[:a, "->", :c], [:c, "->", :b]],
+      [[:a, "->", :b], [:a, "->", :c]],
+    ]
+    assert_includes options, sequentialize([[:a, :b], [:a, :c]])
   end
 
   def test_self_loop
