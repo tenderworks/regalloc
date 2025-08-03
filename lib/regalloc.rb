@@ -192,6 +192,7 @@ module Regalloc
           spill = active.last
           # In either case, we need to allocate a slot on the stack.
           # TODO(max): Reuse freed stack slots
+          # TODO(max): Insert a spill instruction at an odd index
           slot = StackSlot.new(num_stack_slots)
           num_stack_slots += 1
           if spill.range.end > interval.range.end
