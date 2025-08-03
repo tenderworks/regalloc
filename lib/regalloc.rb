@@ -172,6 +172,9 @@ module Regalloc
       # Iterate through intervals in order of increasing start point
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
         # expire_old_intervals(interval)
+        # TODO(max): We can probably do this slightly faster by starting at the
+        # current interval's start point index in active and walking backwards?
+        # Maybe?
         active.select! do |active_interval|
           if active_interval.range.end >= interval.range.begin
             true
