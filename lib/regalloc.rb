@@ -193,7 +193,8 @@ module Regalloc
           slot = StackSlot.new(num_stack_slots)
           num_stack_slots += 1
           if spill.range.end > interval.range.end
-            # The last active interval ends further away than the current interval; spill it.
+            # The last active interval ends further away than the current
+            # interval; spill the last active interval.
             assignment[interval] = assignment[spill]
             raise "Should be assigned a register" unless assignment[interval].is_a?(PReg)
             assignment[spill] = slot
@@ -202,7 +203,8 @@ module Regalloc
             insert_idx = active.bsearch_index { |i| i.range.end >= interval.range.end } || active.length
             active.insert(insert_idx, interval)
           else
-            # The current interval ends further away than the last active interval; spill it.
+            # The current interval ends further away than the last active
+            # interval; spill the current interval.
             assignment[interval] = slot
           end
         else
