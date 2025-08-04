@@ -297,13 +297,6 @@ module Regalloc
       # blocks
     end
 
-    # def allocate_registers
-    #   1. schedule (number instructions)
-    #   2. backward iteration to calculate live ranges
-    #   3. normal linear scan
-    #   4. ssa resolution (incl parallel moves)
-    # end
-
     def rpo
       po.reverse
     end
