@@ -106,7 +106,6 @@ module Regalloc
       @next_vreg_name = 10
       @next_blk_name = 1
       @vregs = {}
-      @instructions = []
       @block_order = nil
     end
 
@@ -115,10 +114,8 @@ module Regalloc
       number = 16
       @block_order.each do |blk|
         blk.number = number
-        @instructions[number] = blk
         number += 2
         blk.instructions.each do |insn|
-          @instructions[number] = insn
           insn.number = number
           number += 2
         end
