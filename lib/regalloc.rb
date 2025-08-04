@@ -159,6 +159,19 @@ module Regalloc
       intervals
     end
 
+    def insert_before idx, insn
+      @block_order.each do |block|
+        if Range.new(block.from, block.to).cover? idx
+          for i in 0...(block.instructions.length)
+            if block.instructions[i].number == idx
+              block.instructions.insert i, insn
+              return
+            end
+          end
+        end
+      end
+    end
+
     def ye_olde_linear_scan intervals, num_registers
       if num_registers <= 0
         raise ArgumentError, "Number of registers must be positive"
@@ -199,6 +212,8 @@ module Regalloc
             # The last active interval ends further away than the current interval; spill it.
             assignment[interval] = assignment[spill]
             raise "Should be assigned a register" unless assignment[interval].is_a?(PReg)
+            spill_insn = Insn.new(:mov, slot, [assignment[spill]])
+            insert_before interval.range.begin, spill_insn
             assignment[spill] = slot
             active.pop  # We know spill is the last one
             # Insert interval into already-sorted active
