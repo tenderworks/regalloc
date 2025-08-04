@@ -388,7 +388,7 @@ module Regalloc
       gen = Hash.new 0
       kill = Hash.new 0
       order.each do |block|
-        block.instructions.each do |insn|
+        block.instructions.reverse_each do |insn|
           out = insn.out&.as_vreg
           if out
             kill[block] |= (1 << out.num)
