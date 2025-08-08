@@ -252,7 +252,8 @@ class LivenessTests < Minitest::Test
     b1.define do
       i1 = loadi imm(123)
       i2 = loadi imm(456)
-      blt iftrue: edge(b2, []), iffalse: edge(b3, [i1])
+      i3 = mov i2
+      blt iftrue: edge(b2, []), iffalse: edge(b3, [i3])
     end
     b2.define do
       i3 = loadi imm(789)

@@ -25,6 +25,10 @@ module Regalloc
       out
     end
 
+    def mov a
+      add a, imm(0)
+    end
+
     def ret innie
       self << Insn.new(:ret, nil, [innie])
     end
@@ -275,7 +279,6 @@ module Regalloc
           next if sequence.empty?
           if num_predecessors[successor] > 1 && num_successors > 1
             # TODO(max): Figure out a move sequence that actually causes a critical edge split
-            raise "????????"
             b = new_block
             b.insert_moves_at_start sequence
             b.instructions << Insn.new(:jump, nil, [Edge.new(successor, [])])
