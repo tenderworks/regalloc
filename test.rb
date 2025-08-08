@@ -28,6 +28,39 @@ class LivenessTests < Minitest::Test
     @func = build_func
   end
 
+  def test_range
+    func = Regalloc::Function.new
+    func.next_vreg_name = 0
+    func.insn_start_number = 0
+
+    b1 = func.new_block
+
+    # 0: block
+    # 2: v0 = $1
+    # 4: v1 = add v0, $2
+    # 6: ret v1
+    #
+    # v0: [2, 4)
+    # v1: [4, 6)
+    v0 = v1 = nil
+    b1.define do
+      v0 = loadi(imm(5))
+      v1 = add(v0, imm(1))
+      ret v1
+    end
+
+    func.entry_block = b1
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 1
+
+    func.resolve_ssa intervals, assignments
+
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[v0]]
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[v1]]
+  end
+
   def test_live_in
     live_in = func.analyze_liveness
     assert_equal bitset_to_names(live_in[@b1], func), []
@@ -62,10 +95,10 @@ class LivenessTests < Minitest::Test
     assert_equal 0, num_stack_slots
     assert_equal Regalloc::PReg.new(0), assignments[intervals[@r10]]
     assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
-    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r12]]
-    assert_equal Regalloc::PReg.new(3), assignments[intervals[@r13]]
-    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r14]]
-    assert_equal Regalloc::PReg.new(4), assignments[intervals[@r15]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r12]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r13]]
+    assert_equal Regalloc::PReg.new(3), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r15]]
   end
 
   def test_linear_scan_spill
@@ -73,13 +106,13 @@ class LivenessTests < Minitest::Test
     func.number_instructions!
     intervals = func.build_intervals live_in
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 1
-    assert_equal 4, num_stack_slots
+    assert_equal 3, num_stack_slots
     assert_equal Regalloc::StackSlot.new(0), assignments[intervals[@r10]]
     assert_equal Regalloc::PReg.new(0), assignments[intervals[@r11]]
     assert_equal Regalloc::StackSlot.new(1), assignments[intervals[@r12]]
-    assert_equal Regalloc::StackSlot.new(2), assignments[intervals[@r13]]
-    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r14]]
-    assert_equal Regalloc::StackSlot.new(3), assignments[intervals[@r15]]
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r13]]
+    assert_equal Regalloc::StackSlot.new(2), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r15]]
   end
 
   def test_linear_scan_spill_less
@@ -87,12 +120,12 @@ class LivenessTests < Minitest::Test
     func.number_instructions!
     intervals = func.build_intervals live_in
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
-    assert_equal 2, num_stack_slots
+    assert_equal 1, num_stack_slots
     assert_equal Regalloc::StackSlot.new(0), assignments[intervals[@r10]]
     assert_equal Regalloc::PReg.new(1), assignments[intervals[@r11]]
-    assert_equal Regalloc::StackSlot.new(1), assignments[intervals[@r12]]
-    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r13]]
-    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r14]]
+    assert_equal Regalloc::PReg.new(1), assignments[intervals[@r12]]
+    assert_equal Regalloc::PReg.new(2), assignments[intervals[@r13]]
+    assert_equal Regalloc::PReg.new(0), assignments[intervals[@r14]]
     assert_equal Regalloc::PReg.new(2), assignments[intervals[@r15]]
   end
 

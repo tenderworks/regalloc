@@ -100,12 +100,15 @@ module Regalloc
 
   class Function
     attr_accessor :entry_block
+    attr_accessor :next_vreg_name
+    attr_accessor :insn_start_number
 
     def initialize
       @next_vreg_name = 10
       @next_blk_name = 1
       @vregs = {}
       @block_order = nil
+      @insn_start_number = 16
     end
 
     def instructions
@@ -114,7 +117,7 @@ module Regalloc
 
     def number_instructions!
       @block_order = rpo
-      number = 16
+      number = insn_start_number
       @block_order.each do |blk|
         blk.number = number
         number += 2
@@ -176,7 +179,7 @@ module Regalloc
         # current interval's start point index in active and walking backwards?
         # Maybe?
         active.select! do |active_interval|
-          if active_interval.range.end >= interval.range.begin
+          if active_interval.range.end > interval.range.begin
             true
           else
             operand = assignment.fetch(active_interval)
@@ -326,19 +329,22 @@ module Regalloc
 
     def pretty_print(pp)
       pp.text "Function:"
-      pp.breakable
+      pp.text "\n"
       rpo.each_with_index do |block, i|
-        pp.text "#{block.number}: " if block.number
+        if block.number
+          pp.text "    "
+          pp.text "#{block.number}: "
+        end
         pp.breakable if i > 0
-        pp.text "  #{block.name}:"
+        pp.text "#{block.name}:"
         if block.parameters.any?
           pp.text " (#{block.parameters.map(&:inspect).join(", ")})"
         end
-        pp.breakable
+        pp.text "\n"
         block.instructions.each do |insn|
           pp.text "    "
           insn.pretty_print(pp)
-          pp.breakable
+          pp.text "\n"
         end
       end
     end
