@@ -100,13 +100,16 @@ module Regalloc
 
   class Function
     attr_accessor :entry_block
-    attr_reader :instructions
 
     def initialize
       @next_vreg_name = 10
       @next_blk_name = 1
       @vregs = {}
       @block_order = nil
+    end
+
+    def instructions
+      @block_order.flat_map(&:instructions)
     end
 
     def number_instructions!
