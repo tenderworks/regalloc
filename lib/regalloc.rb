@@ -240,6 +240,7 @@ module Regalloc
               Insn.new(:mov, dst, [src])
             end
 
+            # TODO(max): Align the stack
             survivors.map { |s| Insn.new(:push, nil, [s]) } +
               # sequentialize parameters
               sequence + [insn, Insn.new(:mov, mov_input, [return_reg])] +
