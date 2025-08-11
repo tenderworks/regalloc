@@ -34,21 +34,22 @@ class LivenessTests < Minitest::Test
     func.insn_start_number = 0
 
     b1 = func.new_block
+    param = func.next_vreg
 
     v0 = v1 = nil
-    b1.define do
+    b1.define(param) do
       v0 = loadi(imm(5))
       v1 = add(v0, imm(1))
       v2 = call([imm(0xF00), v1])
       v4 = add(v2, v0)
-      ret v4
+      v5 = add(param, v4)
+      ret v5
     end
 
     func.entry_block = b1
     live_in = func.analyze_liveness
     func.number_instructions!
     intervals = func.build_intervals live_in
-    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 2
 
     return_reg = Regalloc::PReg.new(0)
     param_regs = [
@@ -60,10 +61,15 @@ class LivenessTests < Minitest::Test
       Regalloc::PReg.new(5),
     ]
 
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 2
+
     # Insert push / pops for caller saved regs
     func.handle_caller_saved_regs intervals, assignments, return_reg, param_regs
 
     func.resolve_ssa intervals, assignments
+
+    pp func
+    return
 
     assert_equal <<-output, func.pretty_inspect
 Function:

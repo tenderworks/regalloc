@@ -317,7 +317,11 @@ module Regalloc
       end
       # Remove all block parameters and arguments; we have resolved SSA
       @block_order.each do |block|
-        block.parameters.clear
+        if block == entry_block
+          block.parameters.map!(&replacement_opnd)
+        else
+          block.parameters.clear
+        end
         block.edges.each do |edge|
           edge.args.clear
         end
