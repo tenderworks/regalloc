@@ -51,9 +51,17 @@ class LivenessTests < Minitest::Test
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 2
 
     return_reg = Regalloc::PReg.new(0)
+    param_regs = [
+      Regalloc::PReg.new(0),
+      Regalloc::PReg.new(1),
+      Regalloc::PReg.new(2),
+      Regalloc::PReg.new(3),
+      Regalloc::PReg.new(4),
+      Regalloc::PReg.new(5),
+    ]
 
     # Insert push / pops for caller saved regs
-    func.handle_caller_saved_regs intervals, assignments, return_reg
+    func.handle_caller_saved_regs intervals, assignments, return_reg, param_regs
 
     func.resolve_ssa intervals, assignments
 
@@ -63,7 +71,8 @@ Function:
     2: P0 = loadi $5
     4: P1 = add P0, $1
     push P0
-    6: P0 = call $3840, P1
+    P0 = mov P1
+    6: P0 = call $3840
     P1 = mov P0
     pop P0
     8: P0 = add P1, P0

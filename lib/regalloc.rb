@@ -223,16 +223,26 @@ module Regalloc
       [assignment, num_stack_slots]
     end
 
-    def handle_caller_saved_regs intervals, assigments, return_reg
+    def handle_caller_saved_regs intervals, assigments, return_reg, param_regs
       @block_order.each do |block|
         x = block.instructions.flat_map do |insn|
           if insn.name == :call
             survivors = intervals.select { |x, r| r.survives?(insn.number) }.map(&:first)
             mov_input = insn.out
             insn.out = return_reg
+
+            ins = insn.ins.drop(1)
+            raise if ins.length > param_regs.length
+
+            insn.ins.replace(insn.ins.first(1))
+
+            sequence = sequentialize(ins.zip(param_regs).to_h).map do |(src, _, dst)|
+              Insn.new(:mov, dst, [src])
+            end
+
             survivors.map { |s| Insn.new(:push, nil, [s]) } +
               # sequentialize parameters
-              [insn, Insn.new(:mov, mov_input, [return_reg])] +
+              sequence + [insn, Insn.new(:mov, mov_input, [return_reg])] +
               survivors.map { |s| Insn.new(:pop, nil, [s]) }.reverse
           else
             insn
