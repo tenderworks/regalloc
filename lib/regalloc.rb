@@ -225,6 +225,7 @@ module Regalloc
     end
 
     def handle_caller_saved_regs intervals, assignments, return_reg, param_regs
+      # TODO(max): Handle argument to `ret` instruction (which should always be in `return_reg`)
       @block_order.each do |block|
         x = block.instructions.flat_map do |insn|
           if insn.name == :call
