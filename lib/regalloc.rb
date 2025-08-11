@@ -25,9 +25,7 @@ module Regalloc
       out
     end
 
-    def mov a
-      add a, imm(0)
-    end
+    def mov(a) = add a, imm(0)
 
     def ret innie
       self << Insn.new(:ret, nil, [innie])
@@ -40,13 +38,9 @@ module Regalloc
       out
     end
 
-    def imm v
-      Immediate.new v
-    end
+    def imm(v) = Immediate.new v
 
-    def edge block, args = []
-      Edge.new(block, args)
-    end
+    def edge(block, args = []) = Edge.new(block, args)
 
     def blt iftrue:, iffalse:
       self << Insn.new(:blt, nil, [iftrue, iffalse])
@@ -81,21 +75,11 @@ module Regalloc
     end
 
     def set_from(from)
-      @range = if @range
-        Range.new(from, @range.end)
-      else
-        # This happens when we don't have a use of the vreg
-        Range.new(from, from)
-      end
+      # @range is nil when we don't have a use of the vreg
+      @range = Range.new(from, @range&.end || from)
     end
 
-    def inspect
-      if @range
-        "Range(#{@range.begin}, #{@range.end})"
-      else
-        "Range(nil, nil)"
-      end
-    end
+    def inspect = "Range(#{@range&.begin}, #{@range&.end})"
 
     def ==(other)
       other.is_a?(Interval) && @range == other.range
@@ -115,9 +99,7 @@ module Regalloc
       @insn_start_number = 16
     end
 
-    def instructions
-      @block_order.flat_map(&:instructions)
-    end
+    def instructions = @block_order.flat_map(&:instructions)
 
     def number_instructions!
       @block_order = rpo
@@ -305,13 +287,9 @@ module Regalloc
       # block_order
     end
 
-    def rpo
-      po.reverse
-    end
+    def rpo = po.reverse
 
-    def po
-      entry_block.po_traversal(Set.new, [])
-    end
+    def po = entry_block.po_traversal(Set.new, [])
 
     def next_vreg
       vreg = VReg.new @next_vreg_name
@@ -320,9 +298,7 @@ module Regalloc
       vreg
     end
 
-    def vreg idx
-      @vregs[idx]
-    end
+    def vreg(idx) = @vregs[idx]
 
     def new_block
       blk = Block.new(self, @next_blk_name, [], [])
@@ -446,25 +422,17 @@ module Regalloc
       @idx = idx
     end
 
-    def name
-      "B#{@idx}"
-    end
+    def name = "B#{@idx}"
 
     def << insn
       @instructions << insn
     end
 
-    def edges
-      @instructions.last.dests
-    end
+    def edges = @instructions.last.dests
 
-    def successors
-      edges.map(&:block)
-    end
+    def successors = edges.map(&:block)
 
-    def out_vregs
-      @instructions.last.dests.map(&:args).reduce([], :+).grep(VReg)
-    end
+    def out_vregs = @instructions.last.dests.map(&:args).reduce([], :+).grep(VReg)
 
     def po_traversal visited, post_order
       return post_order if visited.include?(self)
@@ -516,9 +484,7 @@ module Regalloc
       end
     end
 
-    def dests
-      ins.grep(Edge)
-    end
+    def dests = ins.grep(Edge)
 
     def vreg_ins
       result = []
@@ -548,9 +514,7 @@ module Regalloc
       @val = val
     end
 
-    def inspect
-      "$" + val.inspect
-    end
+    def inspect = "$#{val.inspect}"
   end
 
   class VReg      < Operand
@@ -559,9 +523,7 @@ module Regalloc
       @num = num
     end
 
-    def inspect
-      "V#{@num}"
-    end
+    def inspect = "V#{@num}"
 
     def as_vreg = self
   end
@@ -573,9 +535,7 @@ module Regalloc
       @name = name
     end
 
-    def inspect
-      "P#{@name}"
-    end
+    def inspect = "P#{@name}"
 
     def == other
       other.is_a?(PReg) && @name == other.name
@@ -589,9 +549,7 @@ module Regalloc
       @index = index
     end
 
-    def inspect
-      "Stack[#{@index}]"
-    end
+    def inspect = "Stack[#{@index}]"
 
     def == other
       other.is_a?(StackSlot) && @index == other.index
