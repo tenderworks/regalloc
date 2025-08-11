@@ -278,20 +278,18 @@ module Regalloc
           # insert
           next if sequence.empty?
           if num_predecessors[successor] > 1 && num_successors > 1
-            # TODO(max): Figure out a move sequence that actually causes a critical edge split
+            # Make a new interstitial block
             b = new_block
             b.insert_moves_at_start sequence
             b.instructions << Insn.new(:jump, nil, [Edge.new(successor, [])])
             edge.block = b
           elsif num_successors > 1
             # Insert into the beginning of the block
-            # raise "May not happen??????"
             successor.insert_moves_at_start sequence
           else
             # Insert into the end of the block... before the terminator
             predecessor.insert_moves_at_end sequence
           end
-          # TODO(max): Rewrite vregs to pregs
         end
       end
       # Remove all block parameters and arguments; we have resolved SSA
@@ -303,6 +301,8 @@ module Regalloc
       end
       # TODO(max): Recalculate @block_order since we inserted new splitting
       # blocks
+      # TODO(max): Split critical edges earlier so we don't have to recalculate
+      # block_order
     end
 
     def rpo
