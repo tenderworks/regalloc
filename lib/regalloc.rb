@@ -171,16 +171,17 @@ module Regalloc
       num_stack_slots = 0
       # Iterate through intervals in order of increasing start point
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
-        # expire_old_intervals(interval)
         # TODO(max): We can probably do this slightly faster by starting at the
         # current interval's start point index in active and walking backwards?
         # Maybe?
+        # expire_old_intervals(interval)
         active.select! do |active_interval|
           if active_interval.range.end > interval.range.begin
             true
           else
             operand = assignment.fetch(active_interval)
             raise "Should be assigned a register" unless operand.is_a?(PReg)
+            raise "Should have a name" unless operand.name
             free_registers.add(operand.name)
             false
           end
@@ -212,7 +213,7 @@ module Regalloc
           end
         else
           # TODO(max): Use ctz to get lowest free register
-          reg = free_registers.min
+          reg = free_registers.min || raise("no free regs?")
           free_registers.delete(reg)
           assignment[interval] = PReg.new(reg)
           # Insert interval into already-sorted active
@@ -572,6 +573,7 @@ module Regalloc
     attr_reader :name
 
     def initialize name
+      raise ArgumentError unless name
       @name = name
     end
 
