@@ -224,11 +224,13 @@ module Regalloc
       [assignment, num_stack_slots]
     end
 
-    def handle_caller_saved_regs intervals, assigments, return_reg, param_regs
+    def handle_caller_saved_regs intervals, assignments, return_reg, param_regs
       @block_order.each do |block|
         x = block.instructions.flat_map do |insn|
           if insn.name == :call
-            survivors = intervals.select { |x, r| r.survives?(insn.number) }.map(&:first)
+            survivors = intervals.select { |x, r| r.survives?(insn.number) }.map(&:first).select { |vreg|
+              assignments[intervals[vreg]].is_a?(PReg)
+            }
             mov_input = insn.out
             insn.out = return_reg
 
@@ -253,7 +255,7 @@ module Regalloc
       end
     end
 
-    def resolve_ssa intervals, assignments
+    def resolve_ssa intervals, assignments, param_regs
       num_predecessors = Hash.new 0
       @block_order.each do |block|
         block.edges.each do |edge|
@@ -326,6 +328,18 @@ module Regalloc
           edge.args.clear
         end
       end
+
+      # We're typically going to have more param regs than block parameters
+      # When we zip the param regs with block params, we'll end up with param
+      # regs mapping to nil. We filter those away by selecting for tuples
+      # that have a truthy second value
+      # [[x, y], [z, nil]].select(&:last) (reject the second tuple)
+      sequence = sequentialize(param_regs.zip(entry_block.parameters).select(&:last).to_h).map do |(src, _, dst)|
+        Insn.new(:mov, dst, [src])
+      end
+
+      entry_block.insert_moves_at_start(sequence)
+
       # TODO(max): Recalculate @block_order since we inserted new splitting
       # blocks
       # TODO(max): Split critical edges earlier so we don't have to recalculate

@@ -66,23 +66,22 @@ class LivenessTests < Minitest::Test
     # Insert push / pops for caller saved regs
     func.handle_caller_saved_regs intervals, assignments, return_reg, param_regs
 
-    func.resolve_ssa intervals, assignments
-
-    pp func
-    return
+    func.resolve_ssa intervals, assignments, param_regs
 
     assert_equal <<-output, func.pretty_inspect
 Function:
-    0: B1:
-    2: P0 = loadi $5
-    4: P1 = add P0, $1
-    push P0
-    P0 = mov P1
+    0: B1: (Stack[0])
+    Stack[0] = mov P0
+    2: P1 = loadi $5
+    4: P0 = add P1, $1
+    push P1
+    P0 = mov P0
     6: P0 = call $3840
-    P1 = mov P0
-    pop P0
-    8: P0 = add P1, P0
-    10: ret P0
+    P0 = mov P0
+    pop P1
+    8: P0 = add P0, P1
+    10: P0 = add Stack[0], P0
+    12: ret P0
 
     output
   end
@@ -114,7 +113,7 @@ Function:
     intervals = func.build_intervals live_in
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 1
 
-    func.resolve_ssa intervals, assignments
+    func.resolve_ssa intervals, assignments, param_regs
 
     assert_equal Regalloc::PReg.new(0), assignments[intervals[v0]]
     assert_equal Regalloc::PReg.new(0), assignments[intervals[v1]]
@@ -197,7 +196,7 @@ Function:
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
     puts "BEFORE"
     pp func
-    func.resolve_ssa intervals, assignments
+    func.resolve_ssa intervals, assignments, param_regs
     puts "AFTER"
     pp func
   end
@@ -210,7 +209,7 @@ Function:
     assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
     puts "BEFORE"
     pp func
-    func.resolve_ssa intervals, assignments
+    func.resolve_ssa intervals, assignments, param_regs
     puts "AFTER"
     pp func
   end
@@ -326,5 +325,16 @@ Function:
     end
     func.entry_block = b1
     func
+  end
+
+  def param_regs
+    [
+      Regalloc::PReg.new(0),
+      Regalloc::PReg.new(1),
+      Regalloc::PReg.new(2),
+      Regalloc::PReg.new(3),
+      Regalloc::PReg.new(4),
+      Regalloc::PReg.new(5),
+    ]
   end
 end
