@@ -243,6 +243,7 @@ module Regalloc
             # TODO(max): Align the stack
             survivors.map { |s| Insn.new(:push, nil, [s]) } +
               # sequentialize parameters
+              # TODO(max): Don't write a mov when mov_input ends up in return_reg naturally
               sequence + [insn, Insn.new(:mov, mov_input, [return_reg])] +
               survivors.map { |s| Insn.new(:pop, nil, [s]) }.reverse
           else
