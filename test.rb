@@ -28,6 +28,50 @@ class LivenessTests < Minitest::Test
     @func = build_func
   end
 
+  def test_call
+    func = Regalloc::Function.new
+    func.next_vreg_name = 0
+    func.insn_start_number = 0
+
+    b1 = func.new_block
+
+    v0 = v1 = nil
+    b1.define do
+      v0 = loadi(imm(5))
+      v1 = add(v0, imm(1))
+      v2 = call([imm(0xF00), v1])
+      v4 = add(v2, v0)
+      ret v4
+    end
+
+    func.entry_block = b1
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 2
+
+    return_reg = Regalloc::PReg.new(0)
+
+    # Insert push / pops for caller saved regs
+    func.handle_caller_saved_regs intervals, assignments, return_reg
+
+    func.resolve_ssa intervals, assignments
+
+    assert_equal <<-output, func.pretty_inspect
+Function:
+    0: B1:
+    2: P0 = loadi $5
+    4: P1 = add P0, $1
+    push P0
+    6: P0 = call $3840, P1
+    P1 = mov P0
+    pop P0
+    8: P0 = add P1, P0
+    10: ret P0
+
+    output
+  end
+
   def test_range
     func = Regalloc::Function.new
     func.next_vreg_name = 0

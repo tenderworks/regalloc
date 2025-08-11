@@ -19,6 +19,12 @@ module Regalloc
       out
     end
 
+    def call args
+      out = func.next_vreg
+      self << Insn.new(:call, out, args)
+      out
+    end
+
     def add a, b
       out = func.next_vreg
       self << Insn.new(:add, out, [a, b])
@@ -61,6 +67,11 @@ module Regalloc
 
     def initialize
       @range = nil
+    end
+
+    def survives?(x)
+      raise unless @range
+      range.begin < x && range.end > x
     end
 
     def add_range(from, to)
@@ -210,6 +221,25 @@ module Regalloc
         end
       end
       [assignment, num_stack_slots]
+    end
+
+    def handle_caller_saved_regs intervals, assigments, return_reg
+      @block_order.each do |block|
+        x = block.instructions.flat_map do |insn|
+          if insn.name == :call
+            survivors = intervals.select { |x, r| r.survives?(insn.number) }.map(&:first)
+            mov_input = insn.out
+            insn.out = return_reg
+            survivors.map { |s| Insn.new(:push, nil, [s]) } +
+              # sequentialize parameters
+              [insn, Insn.new(:mov, mov_input, [return_reg])] +
+              survivors.map { |s| Insn.new(:pop, nil, [s]) }.reverse
+          else
+            insn
+          end
+        end
+        block.instructions.replace(x)
+      end
     end
 
     def resolve_ssa intervals, assignments
