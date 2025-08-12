@@ -1,6 +1,17 @@
 require "set"
 require "parcopy"
 
+def each_bit n
+  idx = 0
+  while n > 0
+    if n & 1 == 1
+      yield idx
+    end
+    idx += 1
+    n >>= 1
+  end
+end
+
 module Regalloc
   module DSL
     def cmp *ins
