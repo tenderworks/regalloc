@@ -166,10 +166,13 @@ module Regalloc
       intervals
     end
 
-    def write_state idx, active, intervals, current_number, assignment
+    def write_state idx, active, free_registers, intervals, current_number, assignment
       buf = "<table><tr><td>active</td><td>["
       buf << active.sort_by {|interval| interval.range.begin}.map(&:inspect).join(", ")
-      buf << "]</td></tr><tr><td>assignments</td>"
+      buf << "]</td></tr><tr><td>free registers</td><td>["
+      buf << free_registers.sort.map {|idx| PReg.new idx }.map(&:inspect).join(", ")
+      buf << "]</td></tr>"
+      buf << "<tr><td>assignments</td>"
       buf << "<td>
 <table>
   <tr>
@@ -231,7 +234,7 @@ eof
       num_stack_slots = 0
       # Iterate through intervals in order of increasing start point
       idx = 0
-      buf = write_state idx, active, intervals, entry_block.number, assignment
+      buf = write_state idx, active, free_registers, intervals, entry_block.number, assignment
       puts buf
       idx += 1
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
@@ -284,7 +287,7 @@ eof
           insert_idx = active.bsearch_index { |i| i.range.end >= interval.range.end } || active.length
           active.insert(insert_idx, interval)
         end
-        buf = write_state idx, active, intervals, interval.range.begin, assignment
+        buf = write_state idx, active, free_registers, intervals, interval.range.begin, assignment
         puts buf
         idx += 1
       end
