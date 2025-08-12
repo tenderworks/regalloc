@@ -648,7 +648,7 @@ eof
       @num = num
     end
 
-    def inspect = "V#{@num}"
+    def inspect = "R#{@num}"
 
     def as_vreg = self
   end
