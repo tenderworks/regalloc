@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <style>
+.regalloc td {
+  height: 20px;
+}
+.regalloc th {
+  text-align: left;
+}
+body {
+  font-family: monospace;
+}
+iframe {
+  max-width: 100%;
+}
+    </style>
+    <script>
+      var idx = 0;
+      function slide(idx) {
+        return document.getElementById("frame"+idx);
+      }
+      function show_next() {
+        if (slide(idx+1) === null) return;
+        slide(idx).style.display = "none";
+        idx += 1;
+        slide(idx).style.display = "inherit";
+      }
+      function show_prev() {
+        if (slide(idx-1) === null) return;
+        slide(idx).style.display = "none";
+        idx -= 1;
+        slide(idx).style.display = "inherit";
+      }
+    </script>
+  </head>
+  <body width="800px">
+    <button onclick="show_prev()">&larr;</button>
+    <button onclick="show_next()">&rarr;</button>
+    @@CONTENT@@
+  </body>
+</html>

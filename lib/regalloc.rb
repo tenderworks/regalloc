@@ -166,6 +166,55 @@ module Regalloc
       intervals
     end
 
+    def write_state idx, active, intervals, current_number, assignment
+      buf = "<table><tr><td>active</td><td>["
+      buf << active.sort_by {|interval| interval.range.begin}.map(&:inspect).join(", ")
+      buf << "]</td></tr><tr><td>assignments</td>"
+      buf << "<td>
+<table>
+  <tr>
+    <th>vreg</th>
+    <th>interval</th>
+    <th>location</th>
+  </tr>"
+      intervals.each do |vreg, interval|
+        buf << "<tr>"
+        buf << "<td>#{vreg.inspect}</td>"
+        buf << "<td>#{interval.inspect}</td>"
+        buf << "<td>#{assignment[interval].inspect}</td>"
+        buf << "</tr>"
+      end
+      buf << "</table></td></tr></table>"
+      buf << <<-eof
+      <table class="regalloc">
+      <tr>
+        <th></th>
+        <th>idx</th>
+        <th>insn</th>
+      </tr>
+eof
+      @block_order.each do |block|
+        buf << "<tr>"
+        buf << "<td>"
+        buf << (block.number == current_number ? "&rarr;" : "")
+        buf << "</td>"
+        buf << "<td>#{block.number}</td><td>#{block.name}:</tr>"
+        block.instructions.each do |insn|
+          buf << "<tr>"
+          buf << "<td>"
+          buf << (insn.number == current_number ? "&rarr;" : "")
+          buf << "</td>"
+          buf << "<td>#{insn.number}</td>"
+          buf << "<td>#{insn.pretty_inspect}</td>"
+          buf << "</tr>"
+        end
+      end
+      buf << "</table>"
+      # buf.gsub!('"', "&quot;")
+      display = idx == 0 ? "inherit" : "none"
+      "<div id='frame#{idx}' style='display: #{display};'>" + buf + "</div>"
+    end
+
     def ye_olde_linear_scan intervals, num_registers
       if num_registers <= 0
         raise ArgumentError, "Number of registers must be positive"
@@ -177,6 +226,10 @@ module Regalloc
       assignment = {}  # Map from Interval to PReg|StackSlot
       num_stack_slots = 0
       # Iterate through intervals in order of increasing start point
+      idx = 0
+      buf = write_state idx, active, intervals, 0, assignment
+      puts buf
+      idx += 1
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
         # TODO(max): We can probably do this slightly faster by starting at the
         # current interval's start point index in active and walking backwards?
@@ -227,6 +280,9 @@ module Regalloc
           insert_idx = active.bsearch_index { |i| i.range.end >= interval.range.end } || active.length
           active.insert(insert_idx, interval)
         end
+        buf = write_state idx, active, intervals, interval.range.begin, assignment
+        puts buf
+        idx += 1
       end
       [assignment, num_stack_slots]
     end
@@ -538,7 +594,7 @@ module Regalloc
     end
 
     def pretty_print(pp)
-      pp.text "#{@number}: " if @number
+      # pp.text "#{@number}: " if @number
       if @out
         pp.text "#{@out.inspect} = "
       end
