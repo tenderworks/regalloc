@@ -227,7 +227,7 @@ eof
       num_stack_slots = 0
       # Iterate through intervals in order of increasing start point
       idx = 0
-      buf = write_state idx, active, intervals, 0, assignment
+      buf = write_state idx, active, intervals, entry_block.number, assignment
       puts buf
       idx += 1
       intervals.sort_by { |_, interval| interval.range.begin }.each do |_vreg, interval|
