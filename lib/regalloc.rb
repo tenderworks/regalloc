@@ -181,7 +181,7 @@ module Regalloc
         buf << "<tr>"
         buf << "<td>#{vreg.inspect}</td>"
         buf << "<td>#{interval.inspect}</td>"
-        buf << "<td>#{assignment[interval].inspect}</td>"
+        buf << "<td>#{assignment[interval]&.inspect}</td>"
         buf << "</tr>"
       end
       buf << "</table></td></tr></table>"
