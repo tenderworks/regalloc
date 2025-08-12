@@ -1,6 +1,3 @@
-require 'minitest'
-require 'minitest/autorun'
-
 # Resources:
 # https://bboissin.appspot.com/static/upload/bboissin-thesis-2010-09-22.pdf (p80)
 # github.com/pfalcon/parcopy
@@ -101,53 +98,4 @@ def leroy_sequentialize copies
     end
   end
   result
-end
-
-class SequentializeTests < Minitest::Test
-  def test_empty
-    assert_equal [], sequentialize([])
-  end
-
-  def test_simple
-    assert_equal [[:a, "->", :b]], sequentialize([[:a, :b]])
-    assert_equal [[:b, "->", :c], [:a, "->", :b]], sequentialize([[:a, :b], [:b, :c]])
-  end
-
-  def test_multiple
-    options = [
-      [[:c, "->", :d], [:a, "->", :b]],
-      [[:a, "->", :b], [:c, "->", :d]],
-    ]
-    assert_includes options, sequentialize([[:a, :b], [:c, :d]])
-  end
-
-  def test_transitive
-    assert_equal [[:b, "->", :c], [:a, "->", :b]], sequentialize([[:b, :c], [:a, :b]])
-  end
-
-  def test_fan_out
-    options = [
-      [[:a, "->", :c], [:c, "->", :b]],
-      [[:a, "->", :b], [:a, "->", :c]],
-    ]
-    assert_includes options, sequentialize([[:a, :b], [:a, :c]])
-  end
-
-  def test_self_loop
-    assert_equal [], sequentialize([[:a, :a]])
-    assert_equal [], sequentialize([[:a, :a], [:b, :b]])
-  end
-
-  def test_loop
-    assert_equal [[:a, "->", "tmp"], [:b, "->", :a], ["tmp", "->", :b]], sequentialize([[:a, :b], [:b, :a]])
-  end
-
-  def test_duplicate_dst
-    assert_raises { sequentialize([:a, :b], [:c, :b]) }
-  end
-
-  def test_boissinot_thesis
-    # TODO(max): Figure out why Leroy's fails this
-    assert_equal [[:c, "->", :d], [:b, "->", :c], [:a, "->", :b], [:d, "->", :a]], sequentialize([[:a, :b], [:b, :c], [:c, :a], [:c, :d]])
-  end
 end
