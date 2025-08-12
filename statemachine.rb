@@ -20,5 +20,4 @@ func = build_mini
 live_in = func.analyze_liveness
 func.number_instructions!
 intervals = func.build_intervals live_in
-assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 2
-raise
+func.ye_olde_linear_scan intervals, 2

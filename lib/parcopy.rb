@@ -1,5 +1,4 @@
 require 'minitest'
-require 'minitest/autorun'
 
 # Resources:
 # https://bboissin.appspot.com/static/upload/bboissin-thesis-2010-09-22.pdf (p80)
