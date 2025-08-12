@@ -198,7 +198,11 @@ eof
         buf << "<td>"
         buf << (block.number == current_number ? "&rarr;" : "")
         buf << "</td>"
-        buf << "<td>#{block.number}</td><td>#{block.name}:</tr>"
+        buf << "<td>#{block.number}</td><td>#{block.name}"
+        if block.parameters.any?
+          buf << "(#{block.parameters.map(&:inspect).join(", ")})"
+        end
+        buf << ":</tr>"
         block.instructions.each do |insn|
           buf << "<tr>"
           buf << "<td>"
