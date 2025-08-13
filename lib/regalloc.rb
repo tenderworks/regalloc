@@ -329,6 +329,7 @@ module Regalloc
       end
 
       entry_block.insert_moves_at_start(sequence)
+
       rewrite_instructions intervals, assignments
 
       # TODO(max): Recalculate @block_order since we inserted new splitting
@@ -357,8 +358,8 @@ module Regalloc
         else
           block.parameters.clear
         end
-        block.edges.each do |edge|
-          edge.args.clear
+        block.edges.map! do |edge|
+          Edge.new(edge.block, [])
         end
       end
     end
@@ -461,6 +462,8 @@ module Regalloc
     end
 
     def analyze_liveness
+      @vregs.freeze
+
       # Map from Block to bitset of VRegs live at entry
       order = po
       gen, kill = compute_initial_liveness_sets(order)
@@ -576,6 +579,10 @@ module Regalloc
   end
 
   class Operand
+    def initialize
+      freeze
+    end
+
     def pretty_print(pp)
       pp.text inspect
     end
@@ -588,6 +595,7 @@ module Regalloc
 
     def initialize val
       @val = val
+      super()
     end
 
     def inspect = "$#{val.inspect}"
@@ -597,6 +605,7 @@ module Regalloc
     attr_reader :num
     def initialize num
       @num = num
+      super()
     end
 
     def inspect = "V#{@num}"
@@ -610,6 +619,7 @@ module Regalloc
     def initialize name
       raise ArgumentError unless name
       @name = name
+      super()
     end
 
     def inspect = "P#{@name}"
@@ -624,6 +634,7 @@ module Regalloc
 
     def initialize index
       @index = index
+      super()
     end
 
     def inspect = "Stack[#{@index}]"
@@ -639,6 +650,7 @@ module Regalloc
     def initialize base, offset = 0
       @base = base
       @offset = offset
+      super()
     end
 
     def inspect
@@ -654,12 +666,13 @@ module Regalloc
 
   class Edge     < Operand
     attr_reader :args
-    attr_accessor :block
+    attr_reader :block
 
     def initialize block, args
       raise unless block
       @block = block
-      @args = args
+      @args = args.dup.freeze
+      super()
     end
 
     def inspect
