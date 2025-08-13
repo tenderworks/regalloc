@@ -334,12 +334,30 @@ module Regalloc
 
       entry_block.insert_moves_at_start(sequence)
 
+      # Deep copy with references.  We want to rewrite this later for
+      # verification
+      abstract_function = Marshal.load(Marshal.dump(self))
+
       rewrite_instructions intervals, assignments
 
       # TODO(max): Recalculate @block_order since we inserted new splitting
       # blocks
       # TODO(max): Split critical edges earlier so we don't have to recalculate
       # block_order
+      #
+      return abstract_function
+    end
+
+    def abstractify!(intervals, assignments)
+      @block_order.each do |block|
+        block.instructions.map! do |insn|
+          if insn.name == :mov
+            insn
+          else
+            Op.new insn.name, insn.out, insn.ins
+          end
+        end
+      end
     end
 
     def rewrite_instructions intervals, assignments
@@ -584,6 +602,14 @@ module Regalloc
         end
       end
       result
+    end
+  end
+
+  class Op < Insn
+    def initialize name, out, ins, pins, 
+      super
+      @pins = []
+      @pouts = []
     end
   end
 

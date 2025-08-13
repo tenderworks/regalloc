@@ -225,6 +225,18 @@ Function:
     assert_equal Regalloc::PReg.new(2), assignments[intervals[@r15]]
   end
 
+  def test_verify
+    # func = build_smaller_func
+    func = @func
+    live_in = func.analyze_liveness
+    func.number_instructions!
+    intervals = func.build_intervals live_in
+    assignments, num_stack_slots = func.ye_olde_linear_scan intervals, 3
+    abstract = func.resolve_ssa intervals, assignments, param_regs
+    abstract.abstractify!(intervals, assignments)
+    pp abstract
+  end
+
   def test_resolve
     # func = build_smaller_func
     func = @func
