@@ -248,14 +248,18 @@ module Regalloc
             insn.ins.replace(insn.ins.first(1))
 
             sequence = sequentialize(ins.zip(param_regs).to_h).map do |(src, _, dst)|
-              Insn.new(:mov, dst, [src])
+              if src.immediate?
+                Insn.new(:mov, dst, [src])
+              else
+                Insn.new(:mov, dst, [assignments[intervals[src]]])
+              end
             end
 
             # TODO(max): Align the stack
             survivors.map { |s| Insn.new(:push, nil, [s]) } +
               # sequentialize parameters
               # TODO(max): Don't write a mov when mov_input ends up in return_reg naturally
-              sequence + [insn, Insn.new(:mov, mov_input, [return_reg])] +
+              sequence + [insn, Insn.new(:mov, assignments[intervals[mov_input]], [return_reg])] +
               survivors.map { |s| Insn.new(:pop, nil, [s]) }.reverse
           else
             insn
@@ -325,7 +329,7 @@ module Regalloc
       # that have a truthy second value
       # [[x, y], [z, nil]].select(&:last) (reject the second tuple)
       sequence = sequentialize(param_regs.zip(entry_block.parameters).select(&:last).to_h).map do |(src, _, dst)|
-        Insn.new(:mov, dst, [src])
+        Insn.new(:mov, assignments[intervals[dst]], [src])
       end
 
       entry_block.insert_moves_at_start(sequence)
@@ -545,6 +549,11 @@ module Regalloc
       @out = out
       @ins = ins
       @number = nil
+
+      if name == :mov
+        raise "output isn't reg / stack" unless out.preg? || out.stack?
+        raise "inputs #{ins} aren't all regs / stack" unless ins.all? { |x| x.preg? || x.stack? || x.immediate? }
+      end
     end
 
     def pretty_print(pp)
@@ -583,6 +592,10 @@ module Regalloc
       freeze
     end
 
+    def stack? = false
+    def preg? = false
+    def immediate? = false
+
     def pretty_print(pp)
       pp.text inspect
     end
@@ -597,6 +610,8 @@ module Regalloc
       @val = val
       super()
     end
+
+    def immediate? = true
 
     def inspect = "$#{val.inspect}"
   end
@@ -622,6 +637,8 @@ module Regalloc
       super()
     end
 
+    def preg? = true
+
     def inspect = "P#{@name}"
 
     def == other
@@ -636,6 +653,8 @@ module Regalloc
       @index = index
       super()
     end
+
+    def stack? = true
 
     def inspect = "Stack[#{@index}]"
 
