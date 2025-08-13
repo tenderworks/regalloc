@@ -274,15 +274,6 @@ module Regalloc
       end
       replacement_opnd = -> (opnd) { assignments[intervals[opnd]] }
       @block_order.each do |predecessor|
-        predecessor.instructions.each do |insn|
-          out = replacement_opnd.(insn.out)
-          if out
-            insn.out = out
-          end
-          insn.ins.map! do |innie|
-            replacement_opnd.(innie) || innie
-          end
-        end
         outgoing_edges = predecessor.edges
         num_successors = outgoing_edges.length
         outgoing_edges.each do |edge|
@@ -327,17 +318,6 @@ module Regalloc
           end
         end
       end
-      # Remove all block parameters and arguments; we have resolved SSA
-      @block_order.each do |block|
-        if block == entry_block
-          block.parameters.map!(&replacement_opnd)
-        else
-          block.parameters.clear
-        end
-        block.edges.each do |edge|
-          edge.args.clear
-        end
-      end
 
       # We're typically going to have more param regs than block parameters
       # When we zip the param regs with block params, we'll end up with param
@@ -349,11 +329,38 @@ module Regalloc
       end
 
       entry_block.insert_moves_at_start(sequence)
+      rewrite_instructions intervals, assignments
 
       # TODO(max): Recalculate @block_order since we inserted new splitting
       # blocks
       # TODO(max): Split critical edges earlier so we don't have to recalculate
       # block_order
+    end
+
+    def rewrite_instructions intervals, assignments
+      replacement_opnd = -> (opnd) { assignments[intervals[opnd]] }
+      @block_order.each do |predecessor|
+        predecessor.instructions.each do |insn|
+          out = replacement_opnd.(insn.out)
+          if out
+            insn.out = out
+          end
+          insn.ins.map! do |innie|
+            replacement_opnd.(innie) || innie
+          end
+        end
+
+        block = predecessor
+        # Remove all block parameters and arguments; we have resolved SSA
+        if block == entry_block
+          block.parameters.map!(&replacement_opnd)
+        else
+          block.parameters.clear
+        end
+        block.edges.each do |edge|
+          edge.args.clear
+        end
+      end
     end
 
     def rpo = po.reverse
