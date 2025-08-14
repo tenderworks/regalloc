@@ -256,6 +256,7 @@ module Regalloc
             end
 
             # TODO(max): Align the stack
+            # TODO(max): Only push/pop caller-saved registers
             survivors.map { |s| Insn.new(:push, nil, [s]) } +
               # sequentialize parameters
               # TODO(max): Don't write a mov when mov_input ends up in return_reg naturally
